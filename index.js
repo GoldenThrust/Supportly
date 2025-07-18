@@ -1,6 +1,5 @@
-import Database from "./config/db.js";
-
-const database = new Database({dialect: 'postgresql', name: 'supportly', user: 'postgres', password: 'root', host: 'localhost', port: 5432, appname: 'SupportlyApp'});
+import "dotenv/config";
+import { database } from "./config/db.js";
 
 function gracefulShutdown() {
      try {

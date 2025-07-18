@@ -66,5 +66,14 @@ class Database {
         }
     }
 }
+export const database = new Database({
+    dialect: process.env.DB_DIALECT || 'postgresql',
+    name: process.env.DB_NAME || 'supportly',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'root',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    appname: process.env.DB_APPNAME || 'SupportlyApp'
+});
 
 export default Database;

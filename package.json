@@ -6,32 +6,29 @@
   "main": "index.js",
   "description": "",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "mongoose": "^8.16.4",
-    "pg": "^8.16.3",
-    "pg-hstore": "^2.3.4",
+    "@react-router/node": "^7.7.0",
+    "@react-router/serve": "^7.7.0",
+    "isbot": "^5.1.27",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "sequelize": "^6.37.7",
-    "winston": "^3.17.0"
+    "react-router": "^7.7.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.30.1",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react-swc": "^3.10.2",
-    "eslint": "^9.30.1",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.3.0",
-    "vite": "^7.0.4"
+    "@react-router/dev": "^7.7.0",
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/node": "^20",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.3",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "repository": {
     "type": "git",

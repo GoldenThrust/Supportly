@@ -1,3 +1,9 @@
+/node_modules/
+
+# React Router
+/.react-router/
+/build/
+
 # Logs
 logs
 *.log
@@ -23,3 +29,4 @@ dist-ssr
 *.sln
 *.sw?
 .env
+log/*

@@ -1,7 +1,38 @@
 export default function Login() {
-    return (
-        <div>
-            <h1>Login</h1>
-        </div>
-    )
+  return (
+    <div className="bg-slate-50 w-1/2 text-slate-800 rounded-2xl flex flex-col items-center justify-center p-8">
+      <h1
+        className="font-extrabold text-2xl pb-2 text-indigo-700 "
+        style={{
+          fontFamily:
+            "'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif",
+          fontVariantCaps: "small-caps",
+        }}
+      >
+        Supportly
+      </h1>
+      <p className="text-sm text-center mb-4">
+        Welcome back! Log in to your account to continue using
+        <b>Supportly</b>. Simplify your support ticket management and keep your clients happy.
+      </p>
+      <form className="flex flex-col space-y-4 w-full max-w-11/12">
+        <input
+          type="email"
+          placeholder="Email"
+          className="p-2 rounded-2xl border border-gray-300"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="p-2 rounded-2xl border border-gray-300"
+        />
+        <button
+          type="submit"
+          className="bg-cyan-900 text-white p-2 rounded-2xl"
+        >
+          Sign In
+        </button>
+      </form>
+    </div>
+  );
 }

@@ -13,3 +13,8 @@ body {
     color-scheme: dark;
   }
 }
+
+img {
+  @apply max-w-full max-h-full object-cover;
+  font-family: ;
+}

@@ -1,4 +1,6 @@
 import "dotenv/config";
+import cors from 'cors';
+import cookieParser from "cookie-parser";
 import { database } from "./config/db.js";
 import express from 'express';
 import { createServer } from "http";
@@ -11,6 +13,11 @@ const server = createServer(app);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true
+}));
 
 app.get('/', (req, res) => {
   res.send('Welcome to Supportly API');

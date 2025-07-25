@@ -1,5 +1,7 @@
+import { useAppSelector } from "~/store/hooks";
 import type { Route } from "./+types/home";
 import { Link } from "react-router";
+import { selectAuth } from "~/store/selectors";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -9,6 +11,9 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const { isAuthenticated, user } = useAppSelector(selectAuth);
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Navigation */}
@@ -23,7 +28,7 @@ export default function Home() {
                 Supportly
               </h1>
             </div>
-            <div className="flex space-x-4">
+            {!isAuthenticated ? (<div className="flex space-x-4">
               <Link
                 to="/login"
                 className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
@@ -36,7 +41,22 @@ export default function Home() {
               >
                 Get Started
               </Link>
-            </div>
+            </div>) : (
+              <div className="flex space-x-4">
+                <Link
+                  to="/dashboard"
+                  className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/profile"
+                  className="hover:text-indigo-600 px-3 py-2 text-sm font-medium flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600"
+                >
+                  {user?.name[0] || "Profile"}
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </nav>

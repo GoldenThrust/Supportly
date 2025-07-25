@@ -10,11 +10,11 @@ import { createToken } from "../middlewares/tokenManager.js";
 class AuthController {
     async getProfile(req, res) {
         try {
-            const user = await User.findById(req.user._id).select('-password -isActive');
-            if (!user) {
+            const { _id, name, email, role, avatar, phone, preferences } = await User.findById(req.user._id).select('-password -isActive');
+            if (!_id) {
                 return res.status(404).json({ status: "ERROR", message: "User not found" });
             }
-            return res.status(200).json({ status: "OK", message: user });
+            return res.status(200).json({ status: "OK", message: { name, email, role, avatar, phone, preferences } });
         } catch (error) {
             console.error(error);
             return res.status(500).json({ status: "ERROR", message: "Internal Server Error" });
@@ -62,11 +62,11 @@ class AuthController {
                 signed: true,
             });
 
-            const { password: _, id, ...userDetails } = user;
+            const { name, role, avatar, phone, preferences } = user;
 
             return res
                 .status(200)
-                .json({ status: "OK", message: { ...userDetails, token } });
+                .json({ status: "OK", message: { name, email, role, avatar, phone, preferences, token } });
         } catch (error) {
             console.error(error);
             return res.status(500).json({ status: "ERROR", message: "Internal Server Error" });
@@ -109,12 +109,12 @@ class AuthController {
 
     async logout(req, res) {
         try {
-            const user = await User.findById(res.jwt.id);
+            const user = await User.findById(req.user._id);
             if (!user) {
                 return res.status(401).send({ message: "Account not registered OR Token malfunctioned" });
             }
 
-            if (user._id.toString() !== res.jwt.id) {
+            if (user._id.toString() !== req.user._id) {
                 return res.status(403).send("Permissions didn't match");
             }
 
@@ -193,7 +193,7 @@ class AuthController {
             });
 
             await redis.del(`activations-token:${authToken}`);
-            const { password, isActive, id, ...response } = user.toJSON();
+            const { name, email, role, avatar, phone, preferences } = user.toJSON();
 
             return res.redirect(`${clientUrl}`);
         } catch (error) {

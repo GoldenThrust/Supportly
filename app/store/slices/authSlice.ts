@@ -4,11 +4,12 @@ import axios, { type AxiosResponse } from "axios";
 import toast from "react-hot-toast";
 export interface User {
   id: string;
-  fullname: string;
+  name: string;
   email: string;
-  image?: string;
+  avatar?: string;
   role?: string;
-  isActive: boolean;
+  phone?: string;
+  preferences?: Record<string, any>;
 }
 
 interface AuthState {
@@ -37,14 +38,16 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await axios.post("/auth/login", credentials);
 
-      if (response.status !== 201) {
+      if (response.status !== 200) {
         toast.error(response.data.message || "Login failed", {
           duration: 3000,
         });
         return rejectWithValue(response.data.message || "Login failed");
       }
 
-      return response.data;
+      console.log("Login successful:", response.data.message);
+
+      return response.data.message;
     } catch (error: any) {
       toast.error(error.response.data.message || "Login failed", {
         duration: 3000,
@@ -71,7 +74,7 @@ export const registerUser = createAsyncThunk(
         duration: 3000,
       });
 
-      return response.data;
+      return response.data.message;
     } catch (error: any) {
       toast.error(error.response.data.message || "Registration failed", {
         duration: 3000,
@@ -119,7 +122,7 @@ export const verifyEmail = createAsyncThunk(
         );
       }
 
-      return response.data;
+      return response.data.message;
     } catch (error: any) {
       toast.error(error.response.data.message || "Email verification failed", {
         duration: 3000,
@@ -139,7 +142,7 @@ export const fetchUserProfile = createAsyncThunk(
         return rejectWithValue("Failed to fetch user profile");
       }
 
-      return response.data;
+      return response.data.message;
     } catch (error: any) {
       return rejectWithValue(error.response.data.message || "Network error");
     }
@@ -179,7 +182,7 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload;
-        state.token = action.payload.token;
+        state.token = action.payload?.token;
         state.isAuthenticated = true;
         state.error = null;
       })

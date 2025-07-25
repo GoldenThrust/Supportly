@@ -1,24 +1,20 @@
 import { useEffect } from "react";
 import { Link } from "react-router";
+import { useAppDispatch } from "~/store/hooks";
+import { logoutUser } from "~/store/slices/authSlice";
 
 export default function Logout() {
+  const dispatch = useAppDispatch();
+
+  
   useEffect(() => {
-    // Handle logout logic here
-    // Clear any authentication tokens, session data, etc.
-    console.log("User logged out");
-    
-    // In a real app, you might want to:
-    // - Clear localStorage/sessionStorage
-    // - Make an API call to invalidate the session
-    // - Redirect after a delay
-    
-    // Auto-redirect after 3 seconds
     const timer = setTimeout(() => {
       window.location.href = "/";
-    }, 3000);
-
+    }, 1000);
+  
+    dispatch(logoutUser());
     return () => clearTimeout(timer);
-  }, []);
+  }, [dispatch]);
 
   return (
     <div className="bg-slate-50 w-1/2 text-slate-800 rounded-2xl flex flex-col items-center justify-center p-8">

@@ -6,9 +6,9 @@ export function createToken(user, expiresIn = '1h') {
         throw new Error('Invalid user object');
     }
 
-    const { id, name, email, role, avatar, phone, preferences } = user;
+    const { _id, name, email, role, avatar, phone, preferences } = user;
 
-    return jwt.sign({ id, name, email, role, avatar, phone, preferences }, process.env.JWT_SECRET, { expiresIn });
+    return jwt.sign({ _id, name, email, role, avatar, phone, preferences }, process.env.JWT_SECRET, { expiresIn });
 }
 
 export function verifyToken(token) {

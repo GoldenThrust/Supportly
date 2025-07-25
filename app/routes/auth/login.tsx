@@ -42,7 +42,6 @@ export default function Login() {
 
   useEffect(() => {
     if (error) {
-      toast.error(error);
       dispatch(clearError());
     }
   }, [error, dispatch]);
@@ -50,9 +49,8 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await dispatch(loginUser(data));
-      toast.success('Login successful!');
-    } catch (error) {
-      // Error is handled in useEffect
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
 

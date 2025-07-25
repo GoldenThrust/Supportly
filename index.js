@@ -7,16 +7,15 @@ import { createServer } from "http";
 import logger from "./config/logger.js";
 import authRoutes from "./routes/auth.js";
 import { redis } from "./config/redis.js";
-import { hostUrl } from "./utils/constants.js";
+import { apiUrl } from "./utils/constants.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const server = createServer(app);
-var whitelist = [...process.env.CORS_ORIGIN.split(','), `http://localhost:${PORT}`, hostUrl]
+var whitelist = [...process.env.CORS_ORIGIN.split(','), `http://localhost:${PORT}`, apiUrl]
 var corsOptions = {
   origin: function (origin, callback) {
-    console.log(whitelist.indexOf(origin), whitelist)
-    if (whitelist.indexOf(origin) !== -1) {
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
       callback(null, true)
     } else {
       logger.warn(`Cors: Origin ${origin} not allowed by Cors`)

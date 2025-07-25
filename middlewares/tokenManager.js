@@ -25,7 +25,11 @@ export function authenticate(req, res, next) {
 
     const decoded = verifyToken(token);
     if (!decoded) {
-        return res.status(401).json({ message: 'Invalid token' });
+        if (req.path.includes('/api')) {
+            return res.status(401).json({ message: 'Invalid token' });
+        } else {
+            return res.redirect('/login');
+        }
     }
 
     req.userId = decoded.userId;

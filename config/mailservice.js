@@ -1,12 +1,12 @@
 // services/mail.service.js
 import { createTransport } from "nodemailer";
 import { TemplateEngine } from "../utils/template-engine.js";
-import { DEV, hostUrl } from "../utils/constants.js";
+import { DEV, apiUrl } from "../utils/constants.js";
 import process from "process";
 
 class MailService {
   constructor() {
-    this.hostUrl = hostUrl;
+    this.apiUrl = apiUrl;
     this.appName = "Supportly - support made easy";
     this.transporter = createTransport(this.getConfig());
   }
@@ -45,9 +45,10 @@ class MailService {
   }
 
   async sendEmailVerification(user, token) {
-    const link = `${this.hostUrl}/api/auth/verify-email/${token}`;
+    const link = `${this.apiUrl}/api/auth/verify-email/${token}`;
+    console.log("Verification link:", link);
 
-    const html = await TemplateEngine.render('verify-email.html', {
+    const html = await TemplateEngine.render('verify-email', {
       appName: this.appName,
       user,
       link
@@ -62,7 +63,7 @@ class MailService {
   }
 
   async sendResetPassword(user, token) {
-    const resetLink = `${this.hostUrl}/auth/reset-password/${token}/`;
+    const resetLink = `${this.apiUrl}/auth/reset-password/${token}/`;
     
     const html = await TemplateEngine.render('reset-password', {
       appName: this.appName,

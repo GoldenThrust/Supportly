@@ -2,7 +2,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { hostUrl } from './constants.js';
+import { apiUrl } from './constants.js';
 import { redis } from '../config/redis.js';
 
 
@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export class TemplateEngine {
   static async render(templateName, data = {}) {
-    const template = redis.get(`templateName:${templateName}`);
+    const template = await redis.get(`templateName:${templateName}`);
     // Check cache first
     if (template) {
       return this.interpolate(template, data);
@@ -20,9 +20,10 @@ export class TemplateEngine {
     const templatePath = path.join(__dirname, `../templates/emails/${templateName}.html`);
     
     try {
+      console.log(`Loading template from: ${templatePath}`);
       const template = await fs.readFile(templatePath, 'utf-8');
       // Cache the template
-      redis.set(`templateName:${templateName}`, template, 24 * 60 * 60); // Cache for 24 hours
+      await redis.set(`templateName:${templateName}`, template, 24 * 60 * 60); // Cache for 24 hours
       return this.interpolate(template, data);
     } catch (error) {
       throw new Error(`Template not found: ${templateName}`);

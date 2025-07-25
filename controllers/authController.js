@@ -3,9 +3,24 @@ import { redis } from "../config/redis.js";
 import { v4 as uuid } from 'uuid';
 import User from "../model/User.js";
 import { hash, verify } from 'argon2';
+import { clientUrl, COOKIE_NAME, domain } from "../utils/constants.js";
+import { createToken } from "../middlewares/tokenManager.js";
 
 
 class AuthController {
+    async getUser(req, res) {
+        try {
+            const user = await User.findById(res.jwt.id).select('-password -isActive');
+            if (!user) {
+                return res.status(404).json({ status: "ERROR", message: "User not found" });
+            }
+            return res.status(200).json({ status: "OK", message: user });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ status: "ERROR", message: "Internal Server Error" });
+        }
+    }
+
     async login(req, res) {
         try {
             const { email, password } = req.body;
@@ -60,8 +75,8 @@ class AuthController {
 
     async register(req, res) {
         try {
-            const { firstname, lastname, email, password } = req.body;
-            const name = `${firstname} ${lastname}`.trim();
+            const { firstName, lastName, email, password } = req.body;
+            const name = `${firstName} ${lastName}`.trim();
 
             const existingUser = await User.findOne({ email });
 
@@ -77,7 +92,7 @@ class AuthController {
             await redis.set(`activations-token:${token}`, JSON.stringify(user), 60 * 60 * 24); // Store for 24 hours
 
             try {
-                await mailService.sendOTP(user, token)
+                await mailService.sendEmailVerification(user, token)
             } catch (error) {
                 console.error(error);
                 return res.status(500).json({ status: "ERROR", message: "Failed to send activation link" });
@@ -134,13 +149,20 @@ class AuthController {
         try {
             const { token: authToken } = req.params;
 
-            const userDetails = await redis.get(`activations-token:${authToken}`);
+            let userDetails = await redis.get(`activations-token:${authToken}`);
 
             if (!userDetails) {
                 return res.status(401).json({ status: "ERROR", message: "Invalid or expired token" });
             }
 
-            const user = await User.create(JSON.parse(userDetails));
+            userDetails = JSON.parse(userDetails);
+            const existingUser = await User.findOne({ email: userDetails.email });
+
+            if (existingUser) {
+                return res.status(403).json({ status: "ERROR", message: "User already registered" });
+            }
+
+            const user = await User.create(userDetails);
 
             if (!user) {
                 return res.status(500).json({ status: "ERROR", message: "User not found" });
@@ -170,12 +192,10 @@ class AuthController {
                 signed: true,
             });
 
-            await redis.del(`activations-token:${authtoken}`);
+            await redis.del(`activations-token:${authToken}`);
             const { password, isActive, id, ...response } = user.toJSON();
 
-            return res
-                .status(200)
-                .json({ status: "OK", message: response });
+            return res.redirect(`${clientUrl}`);
         } catch (error) {
             console.error(error);
             return res.status(500).json({ status: "ERROR", message: 'Internal Server Error' });

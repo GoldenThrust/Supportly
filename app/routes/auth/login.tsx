@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { useForm } from "react-hook-form";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { loginUser, clearError } from "../../store/slices/authSlice";
@@ -27,7 +27,18 @@ export default function Login() {
   });
   
   const dispatch = useAppDispatch();
-  const { isLoading, error } = useAppSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth);
+
+  // Get the redirect path from location state or default to dashboard
+  const from = (location.state as any)?.from || '/dashboard';
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
 
   useEffect(() => {
     if (error) {

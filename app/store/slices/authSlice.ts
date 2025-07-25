@@ -37,7 +37,7 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await axios.post("/auth/login", credentials);
 
-      if (response.status !== 200) {
+      if (response.status !== 201) {
         toast.error(response.data.message || "Login failed", {
           duration: 3000,
         });
@@ -60,12 +60,16 @@ export const registerUser = createAsyncThunk(
     try {
       const response = await axios.post("/auth/register", userData);
 
-      if (response.status !== 200) {
+      if (response.status !== 201) {
         toast.error(response.data.message || "Registration failed", {
           duration: 3000,
         });
         return rejectWithValue(response.data.message || "Registration failed");
       }
+
+      toast.success(response.data.message || "Registration successful", {
+        duration: 3000,
+      });
 
       return response.data;
     } catch (error: any) {
@@ -91,10 +95,10 @@ export const logoutUser = createAsyncThunk(
       }
 
       return true;
-    } catch (error:any) {
-        toast.error(error.response.data.message || "Logout failed", {
-          duration: 3000,
-        });
+    } catch (error: any) {
+      toast.error(error.response.data.message || "Logout failed", {
+        duration: 3000,
+      });
       return rejectWithValue("Network error");
     }
   }
@@ -121,6 +125,23 @@ export const verifyEmail = createAsyncThunk(
         duration: 3000,
       });
       return rejectWithValue("Network error");
+    }
+  }
+);
+
+export const fetchUserProfile = createAsyncThunk(
+  "auth/fetchUserProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get("/auth/profile");
+
+      if (response.status !== 200) {
+        return rejectWithValue("Failed to fetch user profile");
+      }
+
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response.data.message || "Network error");
     }
   }
 );
@@ -201,6 +222,21 @@ const authSlice = createSlice({
       .addCase(verifyEmail.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      .addCase(fetchUserProfile.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchUserProfile.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(fetchUserProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        state.isAuthenticated = false;
+        state.user = null;
       });
   },
 });

@@ -8,7 +8,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
+    "start": "react-router-serve ./build/client/index.js",
     "dev:server": "nodemon index.js",
     "createAdmin": "node scripts/createAdmin.js",
     "server": "node index.js",

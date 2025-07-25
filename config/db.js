@@ -20,8 +20,8 @@ class Database {
             logger.info(`Connecting to ${this.dialect} at ${this.url ? this.url : `${this.host}:${this.port}/${this.name}`}`);
             if (this.dialect === 'mongodb') {
                 await this.connectMongoDB();
-            } else if (this.dialect === 'postgresql') {
-                await this.connectPostgreSQL();
+            } else if (['mysql', 'mariadb', 'sqlite', 'mssql', 'postgresql'].includes(this.dialect)) {
+                await this.connectSQL();
             } else {
                 throw new Error(`Unsupported database dialect: ${this.dialect}`);
             }
@@ -46,12 +46,12 @@ class Database {
         });
     }
 
-    async connectPostgreSQL() {
+    async connectSQL() {
         this.model = new Sequelize(this.url ? this.url : this.name, this.user, this.password, {
             host: this.host,
             port: this.port,
             dialect: this.dialect,
-            logging: msg => logger.debug(msg),
+            logging: msg => logger.error(msg),
         });
 
         await this.model.authenticate();
@@ -66,14 +66,16 @@ class Database {
         }
     }
 }
+
 export const database = new Database({
-    dialect: process.env.DB_DIALECT || 'postgresql',
+    dialect: process.env.DB_DIALECT || 'mongodb',
     name: process.env.DB_NAME || 'supportly',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'root',
+    user: process.env.DB_USER || '',
+    password: process.env.DB_PASSWORD || '',
     host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    appname: process.env.DB_APPNAME || 'SupportlyApp'
+    port: process.env.DB_PORT || 27017,
+    appname: process.env.DB_APPNAME || 'SupportlyApp',
+    url: process.env.DB_URL || '',
 });
 
 export default Database;

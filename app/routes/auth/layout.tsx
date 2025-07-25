@@ -1,6 +1,16 @@
-import { Outlet } from "react-router";
+import { useEffect } from "react";
+import { Outlet, useNavigate } from "react-router";
+import { useAppSelector } from "~/store/hooks";
 
 export default function AuthLayout() {
+    const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth);
+    const navigate = useNavigate();
+  
+    useEffect(() => {
+      if (isAuthenticated) {
+        navigate('/dashboard');
+      }
+    }, [isAuthenticated, navigate]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
       {/* Auth Card Container */}

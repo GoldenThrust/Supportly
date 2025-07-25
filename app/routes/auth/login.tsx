@@ -1,26 +1,49 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { useForm } from "react-hook-form";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { loginUser, clearError } from "../../store/slices/authSlice";
+import toast from "react-hot-toast";
+
+interface LoginFormData {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}
 
 export default function Login() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: false,
+    },
+  });
+  
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { isLoading, error } = useAppSelector((state) => state.auth);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log("Login submitted:", formData);
-    setIsLoading(false);
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      await dispatch(loginUser(data)).unwrap();
+      toast.success('Login successful!');
+    } catch (error) {
+      // Error is handled in useEffect
+    }
   };
 
   return (
@@ -37,7 +60,7 @@ export default function Login() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Email Address
@@ -45,10 +68,13 @@ export default function Login() {
           <div className="relative">
             <input
               type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
+              {...register("email", {
+                required: "Email is required",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "Invalid email address"
+                }
+              })}
               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
               placeholder="Enter your email"
             />
@@ -58,6 +84,9 @@ export default function Login() {
               </svg>
             </div>
           </div>
+          {errors.email && (
+            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+          )}
         </div>
 
         <div>
@@ -67,10 +96,13 @@ export default function Login() {
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
+              {...register("password", {
+                required: "Password is required",
+                minLength: {
+                  value: 6,
+                  message: "Password must be at least 6 characters"
+                }
+              })}
               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 pr-12"
               placeholder="Enter your password"
             />
@@ -91,12 +123,16 @@ export default function Login() {
               )}
             </button>
           </div>
+          {errors.password && (
+            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+          )}
         </div>
 
         <div className="flex items-center justify-between">
           <label className="flex items-center">
             <input
               type="checkbox"
+              {...register("rememberMe")}
               className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
             />
             <span className="ml-2 text-sm text-gray-600">Remember me</span>
@@ -111,10 +147,10 @@ export default function Login() {
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
           className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
-          {isLoading ? (
+          {isLoading || isSubmitting ? (
             <>
               <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

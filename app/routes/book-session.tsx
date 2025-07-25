@@ -1,6 +1,14 @@
 import type { Route } from "./+types/book-session";
 import { useState } from "react";
 import { Link } from "react-router";
+import { useForm } from "react-hook-form";
+
+interface BookingFormData {
+  name: string;
+  email: string;
+  reason: string;
+  experience: string;
+}
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,11 +20,18 @@ export function meta({}: Route.MetaArgs) {
 export default function BookSession() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    reason: "",
-    experience: "",
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<BookingFormData>({
+    defaultValues: {
+      name: "",
+      email: "",
+      reason: "",
+      experience: "",
+    },
   });
 
   const availableTimes = [
@@ -25,15 +40,13 @@ export default function BookSession() {
     "15:00", "15:30", "16:00", "16:30", "17:00"
   ];
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (data: BookingFormData) => {
+    if (!selectedDate || !selectedTime) {
+      alert("Please select both date and time");
+      return;
+    }
     // Handle form submission
-    console.log("Booking submitted:", { ...formData, selectedDate, selectedTime });
+    console.log("Booking submitted:", { ...data, selectedDate, selectedTime });
     // Redirect to confirmation page
   };
 
@@ -81,20 +94,26 @@ export default function BookSession() {
                 Tell us about yourself
               </h2>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name *
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
+                    {...register("name", {
+                      required: "Full name is required",
+                      minLength: {
+                        value: 2,
+                        message: "Name must be at least 2 characters"
+                      }
+                    })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder="Enter your full name"
                   />
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -103,13 +122,19 @@ export default function BookSession() {
                   </label>
                   <input
                     type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
+                    {...register("email", {
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address"
+                      }
+                    })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder="Enter your email address"
                   />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -117,14 +142,20 @@ export default function BookSession() {
                     Reason for Support Session *
                   </label>
                   <textarea
-                    name="reason"
-                    value={formData.reason}
-                    onChange={handleInputChange}
-                    required
+                    {...register("reason", {
+                      required: "Please describe the reason for your session",
+                      minLength: {
+                        value: 10,
+                        message: "Please provide more details (at least 10 characters)"
+                      }
+                    })}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder="Describe the issue you're facing or what you need help with..."
                   />
+                  {errors.reason && (
+                    <p className="mt-1 text-sm text-red-600">{errors.reason.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -132,9 +163,7 @@ export default function BookSession() {
                     Experience with Similar Products
                   </label>
                   <select
-                    name="experience"
-                    value={formData.experience}
-                    onChange={handleInputChange}
+                    {...register("experience")}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   >
                     <option value="">Select your experience level</option>
@@ -201,12 +230,12 @@ export default function BookSession() {
                 )}
 
                 <button
-                  type="submit"
-                  onClick={handleSubmit}
-                  disabled={!formData.name || !formData.email || !formData.reason || !selectedDate || !selectedTime}
+                  type="button"
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={isSubmitting || !selectedDate || !selectedTime}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-md font-medium"
                 >
-                  Book Support Session
+                  {isSubmitting ? "Booking..." : "Book Support Session"}
                 </button>
               </div>
             </div>

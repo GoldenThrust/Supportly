@@ -1,17 +1,32 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import { useForm } from "react-hook-form";
+
+interface ForgotPasswordFormData {
+  email: string;
+}
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordFormData>({
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  const onSubmit = async (data: ForgotPasswordFormData) => {
     setIsLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
-    console.log("Password reset requested for:", email);
+    console.log("Password reset requested for:", data.email);
+    setSubmittedEmail(data.email);
     setIsLoading(false);
     setIsSubmitted(true);
   };
@@ -30,7 +45,7 @@ export default function ForgotPassword() {
         <p className="text-gray-600 mb-2">
           We've sent a password reset link to
         </p>
-        <p className="font-semibold text-gray-900 mb-6">{email}</p>
+        <p className="font-semibold text-gray-900 mb-6">{submittedEmail}</p>
         <p className="text-sm text-gray-500 mb-8">
           If you don't see the email, check your spam folder or try again with a different email address.
         </p>
@@ -82,7 +97,7 @@ export default function ForgotPassword() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Email Address
@@ -90,9 +105,13 @@ export default function ForgotPassword() {
           <div className="relative">
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              {...register("email", {
+                required: "Email is required",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "Invalid email address"
+                }
+              })}
               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
               placeholder="Enter your email address"
             />
@@ -102,14 +121,17 @@ export default function ForgotPassword() {
               </svg>
             </div>
           </div>
+          {errors.email && (
+            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
           className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
-          {isLoading ? (
+          {isLoading || isSubmitting ? (
             <>
               <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

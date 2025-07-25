@@ -1,10 +1,8 @@
 import mongoose from 'mongoose';
-import { Sequelize } from 'sequelize';
 import logger from './logger.js';
 
 class Database {
-    constructor({ dialect = "mongodb", name = "supportly", user = "", password = "", host = "localhost", port = 27017, url = '', appname = "" } = {}) {
-        this.dialect = dialect;
+    constructor({ name = "supportly", user = "", password = "", host = "localhost", port = 27017, url = '', appname = "" } = {}) {
         this.name = name;
         this.user = user;
         this.password = password;
@@ -17,18 +15,21 @@ class Database {
 
     async connect() {
         try {
-            logger.info(`Connecting to ${this.dialect} at ${this.url ? this.url : `${this.host}:${this.port}/${this.name}`}`);
-            if (this.dialect === 'mongodb') {
-                await this.connectMongoDB();
-            } else if (['mysql', 'mariadb', 'sqlite', 'mssql', 'postgresql'].includes(this.dialect)) {
-                await this.connectSQL();
-            } else {
-                throw new Error(`Unsupported database dialect: ${this.dialect}`);
-            }
+            logger.info(`Connecting to mongodb at ${this.url ? this.url : `${this.host}:${this.port}/${this.name}`}`);
+            const uri = this.url ? this.url : `mongodb://${this.user}${this.password ? `:${this.password}@` : ''}${this.host}:${this.port}/${this.name}`;
 
-            logger.info(`Connected to ${this.dialect} database: ${this.name}`);
+            this.model = await mongoose.connect(uri, {
+                ...(this.appname ? { appname: this.appname } : {}),
+                dbName: this.name,
+            });
+
+            mongoose.connection.on('error', err => {
+                logger.error(err);
+            });
+
+            logger.info(`Connected to mongo database: ${this.name}`);
         } catch (error) {
-            logger.error(`Error connecting to ${this.dialect} database:`, error);
+            logger.error(`Error connecting to mongo database:`, error);
             throw error;
         }
     }
@@ -44,18 +45,6 @@ class Database {
         mongoose.connection.on('error', err => {
             logger.error(err);
         });
-    }
-
-    async connectSQL() {
-        this.model = new Sequelize(this.url ? this.url : this.name, this.user, this.password, {
-            host: this.host,
-            port: this.port,
-            dialect: this.dialect,
-            logging: msg => logger.error(msg),
-        });
-
-        await this.model.authenticate();
-        await this.model.sync();
     }
 
     async close() {

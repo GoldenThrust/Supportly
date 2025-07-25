@@ -6,6 +6,7 @@ import express from 'express';
 import { createServer } from "http";
 import logger from "./config/logger.js";
 import authRoutes from "./routes/auth.js";
+import { redis } from "./config/redis.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,6 +42,7 @@ process.on('SIGINT', gracefulShutdown);
 
 server.listen(PORT, async () => {
   logger.info(`Server listening on http://localhost:${PORT}`);
+  await redis.connect();
   await database.connect();
   logger.info('Server ready');
 });

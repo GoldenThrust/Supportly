@@ -12,3 +12,15 @@ export function validate(validations) {
         next();
     };
 }
+
+export const registerValidation = [
+    body('firstname').notEmpty().withMessage('First name is required'),
+    body('lastname').notEmpty().withMessage('Last name is required'),
+    body('email').isEmail().withMessage('Invalid email address'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+];
+
+export const loginValidation = [
+    body('email').isEmail().withMessage('Invalid email address'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+];

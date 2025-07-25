@@ -8,9 +8,9 @@ import { createToken } from "../middlewares/tokenManager.js";
 
 
 class AuthController {
-    async getUser(req, res) {
+    async getProfile(req, res) {
         try {
-            const user = await User.findById(res.jwt.id).select('-password -isActive');
+            const user = await User.findById(req.user._id).select('-password -isActive');
             if (!user) {
                 return res.status(404).json({ status: "ERROR", message: "User not found" });
             }
@@ -204,10 +204,6 @@ class AuthController {
 
     async resendVerification(req, res) {
         // Implement resend verification logic here
-    }
-
-    async getProfile(req, res) {
-
     }
 
     async updateProfile(req, res) {

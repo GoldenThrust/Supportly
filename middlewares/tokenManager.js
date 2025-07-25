@@ -1,11 +1,14 @@
 import jwt from 'jsonwebtoken';
+import { COOKIE_NAME } from '../utils/constants.js';
 
 export function createToken(user, expiresIn = '1h') {
     if (!user || !user.id) {
         throw new Error('Invalid user object');
     }
 
-    return jwt.sign(user.toJSON(), process.env.JWT_SECRET, { expiresIn });
+    const { id, name, email, role, avatar, phone, preferences } = user;
+
+    return jwt.sign({ id, name, email, role, avatar, phone, preferences }, process.env.JWT_SECRET, { expiresIn });
 }
 
 export function verifyToken(token) {
@@ -18,11 +21,12 @@ export function verifyToken(token) {
 }
 
 export function authenticate(req, res, next) {
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+    const token = req.signedCookies[COOKIE_NAME];
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
+    
     const decoded = verifyToken(token);
     if (!decoded) {
         if (req.path.includes('/api')) {
@@ -32,6 +36,6 @@ export function authenticate(req, res, next) {
         }
     }
 
-    req.userId = decoded.userId;
+    req.user = decoded;
     next();
 }

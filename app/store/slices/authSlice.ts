@@ -1,6 +1,7 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
-
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import type { PayloadAction } from "@reduxjs/toolkit";
+import axios, { type AxiosResponse } from "axios";
+import toast from "react-hot-toast";
 export interface User {
   id: string;
   fullname: string;
@@ -28,104 +29,113 @@ const initialState: AuthState = {
 
 // Async thunks for API calls
 export const loginUser = createAsyncThunk(
-  'auth/loginUser',
-  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
+  "auth/loginUser",
+  async (
+    credentials: { email: string; password: string },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+      const response = await axios.post("/auth/login", credentials);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.response || 'Login failed');
+      if (response.status !== 200) {
+        toast.error(response.data.message || "Login failed", {
+          duration: 3000,
+        });
+        return rejectWithValue(response.data.message || "Login failed");
       }
 
-      return data.response;
-    } catch (error) {
-      return rejectWithValue('Network error');
+      return response.data;
+    } catch (error: any) {
+      toast.error(error.response.data.message || "Login failed", {
+        duration: 3000,
+      });
+      return rejectWithValue("Network error");
     }
   }
 );
 
 export const registerUser = createAsyncThunk(
-  'auth/registerUser',
-  async (userData: { fullname: string; email: string; password: string }, { rejectWithValue }) => {
+  "auth/registerUser",
+  async (userData: SignupFormData, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+      const response = await axios.post("/auth/register", userData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.response || 'Registration failed');
+      if (response.status !== 200) {
+        toast.error(response.data.message || "Registration failed", {
+          duration: 3000,
+        });
+        return rejectWithValue(response.data.message || "Registration failed");
       }
 
-      return data;
-    } catch (error) {
-      return rejectWithValue('Network error');
+      return response.data;
+    } catch (error: any) {
+      toast.error(error.response.data.message || "Registration failed", {
+        duration: 3000,
+      });
+      return rejectWithValue("Network error");
     }
   }
 );
 
 export const logoutUser = createAsyncThunk(
-  'auth/logoutUser',
+  "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const response = await axios.get("/auth/logout");
 
-      if (!response.ok) {
-        return rejectWithValue('Logout failed');
+      if (response.status !== 200) {
+        toast.error(response.data.message || "Logout failed", {
+          duration: 3000,
+        });
+        return rejectWithValue("Logout failed");
       }
 
       return true;
-    } catch (error) {
-      return rejectWithValue('Network error');
+    } catch (error:any) {
+        toast.error(error.response.data.message || "Logout failed", {
+          duration: 3000,
+        });
+      return rejectWithValue("Network error");
     }
   }
 );
 
 export const verifyEmail = createAsyncThunk(
-  'auth/verifyEmail',
+  "auth/verifyEmail",
   async (token: string, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/auth/verify-email/${token}`, {
-        method: 'GET',
-      });
+      const response = await axios.get(`/auth/verify-email/${token}`);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || 'Email verification failed');
+      if (response.status !== 200) {
+        toast.error(response.data.message || "Email verification failed", {
+          duration: 3000,
+        });
+        return rejectWithValue(
+          response.data.message || "Email verification failed"
+        );
       }
 
-      return data.message;
-    } catch (error) {
-      return rejectWithValue('Network error');
+      return response.data;
+    } catch (error: any) {
+      toast.error(error.response.data.message || "Email verification failed", {
+        duration: 3000,
+      });
+      return rejectWithValue("Network error");
     }
   }
 );
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     clearError: (state) => {
       state.error = null;
     },
-    setCredentials: (state, action: PayloadAction<{ user: User; token: string }>) => {
+    setCredentials: (
+      state,
+      action: PayloadAction<{ user: User; token: string }>
+    ) => {
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
@@ -195,5 +205,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setCredentials, clearCredentials } = authSlice.actions;
+export const { clearError, setCredentials, clearCredentials } =
+  authSlice.actions;
 export default authSlice.reducer;

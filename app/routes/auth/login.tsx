@@ -27,7 +27,6 @@ export default function Login() {
   });
   
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const { isLoading, error } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export default function Login() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await dispatch(loginUser(data)).unwrap();
+      await dispatch(loginUser(data));
       toast.success('Login successful!');
     } catch (error) {
       // Error is handled in useEffect
@@ -60,7 +59,7 @@ export default function Login() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 text-black">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Email Address

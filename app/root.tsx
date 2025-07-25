@@ -10,6 +10,9 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { ReduxProvider } from "./components/ReduxProvider";
+import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
+import { set } from "react-hook-form";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -23,6 +26,9 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
 ];
+
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || "/api";
+axios.defaults.withCredentials = true;
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -45,6 +51,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ReduxProvider>
+      <Toaster position="bottom-right" />
       <Outlet />
     </ReduxProvider>
   );

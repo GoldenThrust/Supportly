@@ -1,20 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { useForm } from "react-hook-form";
+import { useAppDispatch } from "~/store/hooks";
+import { registerUser } from "~/store/slices/authSlice";
 
-interface SignupFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  agreeToTerms: boolean;
-}
 
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useAppDispatch();
 
   const {
     register,
@@ -36,9 +31,11 @@ export default function Signup() {
 
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    console.log("Signup submitted:", data);
+    if (data.password === data.confirmPassword && data.agreeToTerms) {
+      delete data?.confirmPassword;
+      delete data?.agreeToTerms;
+      await dispatch(registerUser(data));
+    }
     setIsLoading(false);
   };
 
@@ -56,7 +53,7 @@ export default function Signup() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 text-black">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

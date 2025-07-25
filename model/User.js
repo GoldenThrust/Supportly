@@ -57,7 +57,6 @@ const userSchema = new Schema({
 });
 
 // Index for better query performance
-userSchema.index({ email: 1 });
 userSchema.index({ teamId: 1 });
 userSchema.index({ role: 1 });
 

@@ -7,18 +7,29 @@ import { createServer } from "http";
 import logger from "./config/logger.js";
 import authRoutes from "./routes/auth.js";
 import { redis } from "./config/redis.js";
+import { hostUrl } from "./utils/constants.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const server = createServer(app);
+var whitelist = [...process.env.CORS_ORIGIN.split(','), `http://localhost:${PORT}`, hostUrl]
+var corsOptions = {
+  origin: function (origin, callback) {
+    console.log(whitelist.indexOf(origin), whitelist)
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      logger.warn(`Cors: Origin ${origin} not allowed by Cors`)
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors(corsOptions));
 
 app.get('/', (req, res) => {
   res.send('Welcome to Supportly API');

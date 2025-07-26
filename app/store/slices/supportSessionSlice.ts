@@ -3,6 +3,15 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 import toast from "react-hot-toast";
 
+interface BookingFormData {
+  name: string;
+  email: string;
+  description: string;
+  category: string;
+  subject: string;
+  type: 'technical' | 'billing' | 'general' | 'complaint' | 'feature_request';
+}
+
 export interface SupportSession {
   id: string;
   title: string;
@@ -20,6 +29,10 @@ interface SupportSessionState {
   currentSession: SupportSession | null;
   isLoading: boolean;
   error: string | null;
+  currentPage: number;
+  totalPages: number;
+  totalSessions: number;
+  limit: number;
 }
 
 const initialState: SupportSessionState = {
@@ -27,18 +40,29 @@ const initialState: SupportSessionState = {
   currentSession: null,
   isLoading: false,
   error: null,
+  currentPage: 1,
+  totalPages: 1,
+  totalSessions: 0,
+  limit: 10,
 };
 
 // Async thunks for API calls
 export const fetchSessions = createAsyncThunk(
   "supportSession/fetchSessions",
-  async (_, { rejectWithValue }) => {
+  async (params: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get("/sessions", {
+      const { page = 1, limit = 10 } = params;
+      const response = await axios.get(`/sessions/all?page=${page}&limit=${limit}`, {
         withCredentials: true,
       });
 
-      return response.data.sessions;
+      return {
+        sessions: response.data.sessions,
+        currentPage: page,
+        limit,
+        totalSessions: response.data.total || response.data.sessions.length,
+        totalPages: Math.ceil((response.data.total || response.data.sessions.length) / limit)
+      };
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
@@ -144,6 +168,10 @@ const supportSessionSlice = createSlice({
         state.sessions[index] = action.payload;
       }
     },
+    setPaginationParams: (state, action: PayloadAction<{ page: number; limit: number }>) => {
+      state.currentPage = action.payload.page;
+      state.limit = action.payload.limit;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -154,7 +182,11 @@ const supportSessionSlice = createSlice({
       })
       .addCase(fetchSessions.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.sessions = action.payload;
+        state.sessions = action.payload.sessions;
+        state.currentPage = action.payload.currentPage;
+        state.totalPages = action.payload.totalPages;
+        state.totalSessions = action.payload.totalSessions;
+        state.limit = action.payload.limit;
         state.error = null;
       })
       .addCase(fetchSessions.rejected, (state, action) => {
@@ -199,6 +231,7 @@ export const {
   setCurrentSession,
   clearCurrentSession,
   updateSessionInList,
+  setPaginationParams,
 } = supportSessionSlice.actions;
 
 export default supportSessionSlice.reducer;

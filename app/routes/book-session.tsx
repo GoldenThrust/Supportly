@@ -22,6 +22,7 @@ export default function BookSession() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { error } = useAppSelector(selectSupportSessions);
+  
 
   const { isAuthenticated, user } = useAppSelector(selectAuth);
 

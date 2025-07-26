@@ -22,10 +22,10 @@ export default function IsAuthenticated() {
       }
       
       // Save the current location to redirect back after login
-      navigate("/login", { 
-        state: { from: location.pathname },
-        replace: true 
-      });
+      // navigate("/login", { 
+      //   state: { from: location.pathname },
+      //   replace: true 
+      // });
     }
   }, [isAuthenticated, user, isLoading, navigate, location.pathname]);
 

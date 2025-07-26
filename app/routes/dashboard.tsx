@@ -1,5 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { fetchSessions } from "../store/slices/supportSessionSlice";
+import { 
+  selectSessions, 
+  selectSessionsLoading, 
+  selectSessionsError,
+  selectCurrentPage,
+  selectTotalPages,
+  selectTotalSessions,
+  selectSessionsLimit
+} from "../store/selectors";
 
 export function meta() {
   return [
@@ -10,49 +21,169 @@ export function meta() {
 
 interface Session {
   id: string;
+  sessionId?: string;
   customerName: string;
   customerEmail: string;
   date: string;
   time: string;
   reason: string;
-  status: "upcoming" | "completed" | "cancelled";
+  status: "pending" | "active" | "waiting" | "resolved" | "closed" | "escalated";
   assignedTo?: string;
+  customerId?: {
+    name: string;
+    email: string;
+  };
+  agentId?: {
+    name: string;
+    email: string;
+  };
+  teamId?: {
+    name: string;
+  };
+  subject?: string;
+  description?: string;
+  category?: string;
+  priority?: string;
+  scheduledAt?: string;
+  createdAt?: string;
 }
 
 export default function Dashboard() {
+  const dispatch = useAppDispatch();
+  const sessions = useAppSelector(selectSessions);
+  const isLoading = useAppSelector(selectSessionsLoading);
+  const error = useAppSelector(selectSessionsError);
+  const currentPage = useAppSelector(selectCurrentPage);
+  const totalPages = useAppSelector(selectTotalPages);
+  const totalSessions = useAppSelector(selectTotalSessions);
+  const sessionsLimit = useAppSelector(selectSessionsLimit);
+  
   const [activeTab, setActiveTab] = useState<"sessions" | "schedule" | "team">("sessions");
-  const [sessions] = useState<Session[]>([
-    {
-      id: "1",
-      customerName: "John Doe",
-      customerEmail: "john@example.com",
-      date: "2025-07-25",
-      time: "10:00",
-      reason: "Need help with product setup and configuration",
-      status: "upcoming",
-      assignedTo: "Sarah Johnson",
-    },
-    {
-      id: "2",
-      customerName: "Jane Smith",
-      customerEmail: "jane@example.com",
-      date: "2025-07-25",
-      time: "14:30",
-      reason: "Billing inquiry and account management",
-      status: "upcoming",
-      assignedTo: "Mike Chen",
-    },
-    {
-      id: "3",
-      customerName: "Bob Wilson",
-      customerEmail: "bob@example.com",
-      date: "2025-07-24",
-      time: "11:00",
-      reason: "Technical issue with API integration",
-      status: "completed",
-      assignedTo: "Sarah Johnson",
-    },
-  ]);
+
+  // Fetch sessions from backend when component mounts
+  useEffect(() => {
+    dispatch(fetchSessions({ page: 1, limit: 10 }));
+  }, [dispatch]);
+
+  // Keyboard navigation for pagination
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (activeTab === "sessions" && !isLoading) {
+        if (event.key === "ArrowLeft" && currentPage > 1) {
+          handlePageChange(currentPage - 1);
+        } else if (event.key === "ArrowRight" && currentPage < totalPages) {
+          handlePageChange(currentPage + 1);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [activeTab, currentPage, totalPages, isLoading]);
+
+  // Function to handle page changes
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      dispatch(fetchSessions({ page: newPage, limit: sessionsLimit }));
+    }
+  };
+
+  // Function to handle page size changes
+  const handlePageSizeChange = (newLimit: number) => {
+    dispatch(fetchSessions({ page: 1, limit: newLimit }));
+  };
+
+  // Function to handle refresh
+  const handleRefresh = () => {
+    dispatch(fetchSessions({ page: currentPage, limit: sessionsLimit }));
+  };
+
+  // Function to handle "Go to page" input
+  const handleGoToPage = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      const target = event.target as HTMLInputElement;
+      const page = parseInt(target.value);
+      if (page >= 1 && page <= totalPages) {
+        handlePageChange(page);
+        target.value = '';
+      } else {
+        target.value = '';
+        // Could add a toast notification here for invalid page
+      }
+    }
+  };
+
+  // Helper function to format date and time
+  const formatDateTime = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return { date: "Invalid date", time: "00:00" };
+      }
+      return {
+        date: date.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        time: date.toLocaleTimeString('en-US', { 
+          hour12: false, 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
+      };
+    } catch (error) {
+      return { date: "Invalid date", time: "00:00" };
+    }
+  };
+
+  // Transform backend sessions to match frontend interface
+  const transformedSessions: Session[] = sessions.map((session: any) => {
+    const dateTime = session.scheduledAt || session.date;
+    const formatted = formatDateTime(dateTime);
+    
+    return {
+      id: session.id || session.sessionId || session._id,
+      sessionId: session.sessionId,
+      customerName: session.customerId?.name || session.customerName || "Unknown Customer",
+      customerEmail: session.customerId?.email || session.customerEmail || "No email provided",
+      date: session.scheduledAt ? new Date(session.scheduledAt).toISOString().split('T')[0] : 
+            session.date ? new Date(session.date).toISOString().split('T')[0] : 
+            new Date().toISOString().split('T')[0],
+      time: formatted.time,
+      reason: session.description || session.subject || session.reason || "No description provided",
+      status: session.status || "pending",
+      assignedTo: session.agentId?.name || session.teamId?.name || session.assignedTo || "Unassigned",
+      customerId: session.customerId,
+      agentId: session.agentId,
+      teamId: session.teamId,
+      subject: session.subject,
+      description: session.description,
+      category: session.category,
+      priority: session.priority,
+      scheduledAt: session.scheduledAt,
+      createdAt: session.createdAt
+    };
+  });
+
+  // Calculate stats from actual session data
+  const todaysSessions = transformedSessions.filter(session => {
+    const sessionDate = new Date(session.date);
+    const today = new Date();
+    return sessionDate.toDateString() === today.toDateString();
+  }).length;
+
+  const completedSessions = transformedSessions.filter(session => 
+    session.status === "resolved" || session.status === "closed"
+  ).length;
+
+  const pendingSessions = transformedSessions.filter(session => 
+    session.status === "pending" || session.status === "waiting"
+  ).length;
+
+  const activeSessions = transformedSessions.filter(session => 
+    session.status === "active"
+  ).length;
 
   const [availability, setAvailability] = useState({
     monday: { enabled: true, start: "09:00", end: "17:00" },
@@ -73,9 +204,12 @@ export default function Dashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "upcoming": return "bg-blue-100 text-blue-800";
-      case "completed": return "bg-green-100 text-green-800";
-      case "cancelled": return "bg-red-100 text-red-800";
+      case "pending": return "bg-yellow-100 text-yellow-800";
+      case "active": return "bg-blue-100 text-blue-800";
+      case "waiting": return "bg-orange-100 text-orange-800";
+      case "resolved": 
+      case "closed": return "bg-green-100 text-green-800";
+      case "escalated": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -124,7 +258,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Today's Sessions</p>
-                <p className="text-2xl font-semibold text-gray-900">5</p>
+                <p className="text-2xl font-semibold text-gray-900">{isLoading ? "..." : todaysSessions}</p>
               </div>
             </div>
           </div>
@@ -140,7 +274,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-semibold text-gray-900">12</p>
+                <p className="text-2xl font-semibold text-gray-900">{isLoading ? "..." : completedSessions}</p>
               </div>
             </div>
           </div>
@@ -156,7 +290,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-semibold text-gray-900">3</p>
+                <p className="text-2xl font-semibold text-gray-900">{isLoading ? "..." : pendingSessions}</p>
               </div>
             </div>
           </div>
@@ -166,13 +300,13 @@ export default function Dashboard() {
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Team Members</p>
-                <p className="text-2xl font-semibold text-gray-900">8</p>
+                <p className="text-sm font-medium text-gray-600">Active</p>
+                <p className="text-2xl font-semibold text-gray-900">{isLoading ? "..." : activeSessions}</p>
               </div>
             </div>
           </div>
@@ -212,6 +346,16 @@ export default function Dashboard() {
               >
                 Team Management
               </button>
+              <button
+                onClick={() => setActiveTab("team")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "team"
+                    ? "border-indigo-500 text-indigo-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Team Management
+              </button>
             </nav>
           </div>
         </div>
@@ -220,72 +364,270 @@ export default function Dashboard() {
         {activeTab === "sessions" && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Upcoming Support Sessions</h3>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-medium text-gray-900">Support Sessions</h3>
+                  <div className="flex items-center space-x-2">
+                    <label htmlFor="pageSize" className="text-sm text-gray-700">Show:</label>
+                    <select
+                      id="pageSize"
+                      value={sessionsLimit}
+                      onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                      className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      disabled={isLoading}
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <span className="text-sm text-gray-700">per page</span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                  <svg className={`-ml-0.5 mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {isLoading ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+              {error && (
+                <div className="mt-3 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  Error loading sessions: {error}
+                </div>
+              )}
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date & Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reason
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Assigned To
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sessions.map((session) => (
-                    <tr key={session.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{session.customerName}</div>
-                          <div className="text-sm text-gray-500">{session.customerEmail}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{new Date(session.date).toLocaleDateString()}</div>
-                        <div className="text-sm text-gray-500">{session.time}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">{session.reason}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {session.assignedTo || "Unassigned"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
-                          {session.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          to={`/video-call/${session.id}`}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          Join Call
-                        </Link>
-                        <button className="text-gray-600 hover:text-gray-900">
-                          Edit
-                        </button>
-                      </td>
+            <div className="overflow-x-auto relative">
+              {isLoading && (
+                <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                    <span className="ml-2 text-gray-600">Loading...</span>
+                  </div>
+                </div>
+              )}
+              {transformedSessions.length === 0 && !isLoading ? (
+                <div className="text-center p-8 text-gray-500">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <p className="mt-2">No support sessions found</p>
+                  <p className="text-sm">Sessions will appear here when customers book support appointments</p>
+                </div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date & Time
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Subject/Reason
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Assigned To
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Priority
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {transformedSessions.map((session) => (
+                      <tr key={session.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{session.customerName}</div>
+                            <div className="text-sm text-gray-500">{session.customerEmail}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{formatDateTime(session.scheduledAt || session.date || new Date().toISOString()).date}</div>
+                          <div className="text-sm text-gray-500">{session.time}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs">
+                            <div className="font-medium truncate">{session.subject || "No subject"}</div>
+                            <div className="text-gray-500 truncate">{session.reason}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 capitalize">
+                            {session.category || "general"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {session.assignedTo || "Unassigned"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>
+                            {session.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            session.priority === "urgent" ? "bg-red-100 text-red-800" :
+                            session.priority === "high" ? "bg-orange-100 text-orange-800" :
+                            session.priority === "medium" ? "bg-yellow-100 text-yellow-800" :
+                            "bg-green-100 text-green-800"
+                          }`}>
+                            {session.priority || "medium"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <Link
+                            to={`/video-call/${session.sessionId || session.id}`}
+                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                          >
+                            Join Call
+                          </Link>
+                          <button className="text-gray-600 hover:text-gray-900">
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
+            
+            {/* Pagination */}
+            {!isLoading && totalSessions > 0 && (
+              <div className="bg-white px-4 py-3 border-t border-gray-200 flex items-center justify-between sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-700 flex items-center">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing{' '}
+                      <span className="font-medium">
+                        {Math.min((currentPage - 1) * sessionsLimit + 1, totalSessions)}
+                      </span>{' '}
+                      to{' '}
+                      <span className="font-medium">
+                        {Math.min(currentPage * sessionsLimit, totalSessions)}
+                      </span>{' '}
+                      of{' '}
+                      <span className="font-medium">{totalSessions}</span> results
+                      {totalPages > 1 && (
+                        <span className="text-gray-500 ml-2">
+                          (Use ← → arrow keys to navigate)
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Previous</span>
+                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      
+                      {/* Page numbers */}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                        // Show first page, last page, current page, and pages around current page
+                        const showPage = page === 1 || 
+                                        page === totalPages || 
+                                        (page >= currentPage - 1 && page <= currentPage + 1);
+                        
+                        if (!showPage) {
+                          // Show ellipsis for gaps
+                          if ((page === currentPage - 2 && currentPage > 3) || 
+                              (page === currentPage + 2 && currentPage < totalPages - 2)) {
+                            return (
+                              <span key={page} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                ...
+                              </span>
+                            );
+                          }
+                          return null;
+                        }
+                        
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              page === currentPage
+                                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                      
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Next</span>
+                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </nav>
+                    
+                    {/* Quick page navigation */}
+                    {totalPages > 5 && (
+                      <div className="flex items-center ml-4 space-x-2">
+                        <span className="text-sm text-gray-700">Go to:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={totalPages}
+                          placeholder="Page"
+                          onKeyPress={handleGoToPage}
+                          className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

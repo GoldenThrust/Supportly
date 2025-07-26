@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { COOKIE_NAME } from '../utils/constants.js';
+import User from '../model/User.js';
 
 export function createToken(user, expiresIn = '1h') {
     if (!user || !user.id) {
@@ -20,7 +21,7 @@ export function verifyToken(token) {
     }
 }
 
-export function authenticate(req, res, next) {
+export async function authenticate(req, res, next) {
     const token = req.signedCookies[COOKIE_NAME];
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
@@ -36,6 +37,11 @@ export function authenticate(req, res, next) {
         }
     }
 
-    req.user = decoded;
+    const user = await User.findById(decoded._id);
+    if (!user) {
+        return res.status(401).json({ message: 'User not found' });
+    }
+
+    req.user = user;
     next();
 }

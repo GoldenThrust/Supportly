@@ -13,6 +13,8 @@ export function validate(validations) {
     };
 }
 
+
+// authentication validation
 export const registerValidation = [
     body('firstName').notEmpty().withMessage('First name is required'),
     body('lastName').notEmpty().withMessage('Last name is required'),
@@ -23,4 +25,13 @@ export const registerValidation = [
 export const loginValidation = [
     body('email').isEmail().withMessage('Invalid email address'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+];
+
+// session validation
+export const sessionValidation = [
+    body('category').notEmpty().withMessage('Category is required'),
+    body('subject').notEmpty().withMessage('Subject is required'),
+    body('description').notEmpty().withMessage('Description is required'),
+    body('date').isISO8601().toDate().withMessage('Invalid date format'),
+    body('time').matches(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Invalid time format'),
 ];

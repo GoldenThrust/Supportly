@@ -10,7 +10,7 @@ import { createToken } from "../middlewares/tokenManager.js";
 class AuthController {
     async getProfile(req, res) {
         try {
-            const { _id, name, email, role, avatar, phone, preferences } = await User.findById(req.user._id).select('-password -isActive');
+            const { _id, name, email, role, avatar, phone, preferences } = req.user;
             if (!_id) {
                 return res.status(404).json({ status: "ERROR", message: "User not found" });
             }
@@ -109,13 +109,9 @@ class AuthController {
 
     async logout(req, res) {
         try {
-            const user = await User.findById(req.user._id);
+            const user = req.user;
             if (!user) {
                 return res.status(401).send({ message: "Account not registered OR Token malfunctioned" });
-            }
-
-            if (user._id.toString() !== req.user._id) {
-                return res.status(403).send("Permissions didn't match");
             }
 
             res.clearCookie(COOKIE_NAME, {

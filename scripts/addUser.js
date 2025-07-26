@@ -76,8 +76,7 @@ const createUser = async () => {
 };
 
 const createTeam = async () => {
-    const teamName = await askQu
-    estion('Enter Team Name: ');
+    const teamName = await askQuestion('Enter Team Name: ');
     const description = await askQuestion('Enter Team Description: ');
 
     console.log('\nAvailable departments:');
@@ -165,11 +164,11 @@ const addUserToTeam = async () => {
             console.log('This team already has a leader!');
             return;
         } else if (teamRole === 'lead') {
-            team.leaderId = user._id;
+            team.leaderId = user;
         }
 
-        team.members.push({ userId: user._id });
-        user.teamId = team._id;
+        team.addMember(user);
+        user.teamId = team;
         await team.save();
         await user.save();
     } catch (error) {

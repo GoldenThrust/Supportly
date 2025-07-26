@@ -12,6 +12,11 @@ const supportSessionSchema = new Schema({
         ref: 'User',
         required: true
     },
+    agentId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
     teamId: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
@@ -41,6 +46,10 @@ const supportSessionSchema = new Schema({
         type: String,
         required: true,
         trim: true
+    },
+    date: {
+        type: Date,
+        required: true
     },
     messages: [{
         senderId: {
@@ -164,7 +173,6 @@ const supportSessionSchema = new Schema({
 });
 
 // Indexes for better query performance
-supportSessionSchema.index({ sessionId: 1 });
 supportSessionSchema.index({ customerId: 1 });
 supportSessionSchema.index({ agentId: 1 });
 supportSessionSchema.index({ teamId: 1 });
@@ -180,7 +188,7 @@ supportSessionSchema.index({ teamId: 1, status: 1 });
 supportSessionSchema.index({ agentId: 1, status: 1 });
 
 // Virtual to calculate session duration
-supportSessionSchema.virtual('duration').get(function() {
+supportSessionSchema.virtual('duration').get(function () {
     if (this.resolution.resolvedAt) {
         return Math.floor((this.resolution.resolvedAt - this.createdAt) / (1000 * 60)); // in minutes
     }
@@ -188,12 +196,12 @@ supportSessionSchema.virtual('duration').get(function() {
 });
 
 // Virtual to get unread messages count
-supportSessionSchema.virtual('unreadMessagesCount').get(function() {
+supportSessionSchema.virtual('unreadMessagesCount').get(function () {
     return this.messages.filter(msg => !msg.isRead).length;
 });
 
 // Method to add a message
-supportSessionSchema.methods.addMessage = function(senderId, message, messageType = 'text', attachments = []) {
+supportSessionSchema.methods.addMessage = function (senderId, message, messageType = 'text', attachments = []) {
     this.messages.push({
         senderId,
         message,
@@ -201,51 +209,51 @@ supportSessionSchema.methods.addMessage = function(senderId, message, messageTyp
         attachments,
         timestamp: new Date()
     });
-    
+
     // Add timeline entry
     this.timeline.push({
         action: 'message_sent',
         performedBy: senderId,
         details: `${messageType} message sent`
     });
-    
+
     return this.save();
 };
 
 // Method to assign agent
-supportSessionSchema.methods.assignAgent = function(agentId) {
-    this.agentId = agentId;
+supportSessionSchema.methods.assignAgent = function (agent) {
+    this.agentId = agent;
     this.status = 'active';
-    
+
     // Add timeline entry
     this.timeline.push({
         action: 'assigned',
-        performedBy: agentId,
+        performedBy: agent,
         details: 'Agent assigned to session'
     });
-    
+
     return this.save();
 };
 
 // Method to resolve session
-supportSessionSchema.methods.resolve = function(agentId, summary = '') {
+supportSessionSchema.methods.resolve = function (agentId, summary = '') {
     this.status = 'resolved';
     this.resolution.summary = summary;
     this.resolution.resolvedAt = new Date();
     this.resolution.resolutionTime = Math.floor((this.resolution.resolvedAt - this.createdAt) / (1000 * 60));
-    
+
     // Add timeline entry
     this.timeline.push({
         action: 'resolved',
         performedBy: agentId,
         details: 'Session resolved'
     });
-    
+
     return this.save();
 };
 
 // Method to escalate session
-supportSessionSchema.methods.escalate = function(escalatedBy, escalatedTo, reason) {
+supportSessionSchema.methods.escalate = function (escalatedBy, escalatedTo, reason) {
     this.status = 'escalated';
     this.escalation = {
         reason,
@@ -253,30 +261,30 @@ supportSessionSchema.methods.escalate = function(escalatedBy, escalatedTo, reaso
         escalatedBy,
         escalatedAt: new Date()
     };
-    
+
     // Add timeline entry
     this.timeline.push({
         action: 'escalated',
         performedBy: escalatedBy,
         details: `Session escalated: ${reason}`
     });
-    
+
     return this.save();
 };
 
 // Method to rate session
-supportSessionSchema.methods.rate = function(customerId, score, feedback = '') {
+supportSessionSchema.methods.rate = function (customerId, score, feedback = '') {
     this.rating = {
         score,
         feedback,
         ratedAt: new Date()
     };
-    
+
     return this.save();
 };
 
 // Pre-save middleware to update timeline on status change
-supportSessionSchema.pre('save', function(next) {
+supportSessionSchema.pre('save', function (next) {
     if (this.isModified('status') && !this.isNew) {
         this.timeline.push({
             action: this.status,

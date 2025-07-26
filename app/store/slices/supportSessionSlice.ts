@@ -1,11 +1,13 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import type { PayloadAction } from "@reduxjs/toolkit";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 export interface SupportSession {
   id: string;
   title: string;
   description: string;
-  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  status: "pending" | "active" | "completed" | "cancelled";
   supporterId?: string;
   userId: string;
   scheduledAt: string;
@@ -29,102 +31,100 @@ const initialState: SupportSessionState = {
 
 // Async thunks for API calls
 export const fetchSessions = createAsyncThunk(
-  'supportSession/fetchSessions',
+  "supportSession/fetchSessions",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/sessions', {
-        credentials: 'include',
+      const response = await axios.get("/sessions", {
+        withCredentials: true,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || 'Failed to fetch sessions');
-      }
-
-      return data.sessions;
-    } catch (error) {
-      return rejectWithValue('Network error');
+      return response.data.sessions;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to fetch sessions";
+      return rejectWithValue(message);
     }
   }
 );
 
 export const createSession = createAsyncThunk(
-  'supportSession/createSession',
-  async (sessionData: { title: string; description: string; scheduledAt: string }, { rejectWithValue }) => {
+  "supportSession/createSession",
+  async (sessionData: BookingFormData, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(sessionData),
+      toast.loading("Creating session...", {
+        id: "create-session",
       });
+      const response = await axios.post("/sessions", sessionData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || 'Failed to create session');
-      }
-
-      return data.session;
-    } catch (error) {
-      return rejectWithValue('Network error');
+      toast.success("Session created successfully!", {
+        id: "create-session",
+      });
+      return response.data.session;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        "Failed to create session";
+      toast.error(message, {
+        id: "create-session",
+      });
+      return rejectWithValue(message);
     }
   }
 );
 
 export const joinSession = createAsyncThunk(
-  'supportSession/joinSession',
+  "supportSession/joinSession",
   async (sessionId: string, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/join`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const response = await axios.post(
+        `/sessions/${sessionId}/join`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || 'Failed to join session');
-      }
-
-      return data.session;
-    } catch (error) {
-      return rejectWithValue('Network error');
+      return response.data.session;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to join session";
+      return rejectWithValue(message);
     }
   }
 );
 
 export const updateSessionStatus = createAsyncThunk(
-  'supportSession/updateSessionStatus',
-  async ({ sessionId, status }: { sessionId: string; status: string }, { rejectWithValue }) => {
+  "supportSession/updateSessionStatus",
+  async (
+    { sessionId, status }: { sessionId: string; status: string },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status }),
-      });
+      const response = await axios.patch(
+        `/sessions/${sessionId}/status`,
+        { status },
+        {
+          withCredentials: true,
+        }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || 'Failed to update session');
-      }
-
-      return data.session;
-    } catch (error) {
-      return rejectWithValue('Network error');
+      return response.data.session;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update session";
+      return rejectWithValue(message);
     }
   }
 );
 
 const supportSessionSlice = createSlice({
-  name: 'supportSession',
+  name: "supportSession",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -137,7 +137,9 @@ const supportSessionSlice = createSlice({
       state.currentSession = null;
     },
     updateSessionInList: (state, action: PayloadAction<SupportSession>) => {
-      const index = state.sessions.findIndex(session => session.id === action.payload.id);
+      const index = state.sessions.findIndex(
+        (session) => session.id === action.payload.id
+      );
       if (index !== -1) {
         state.sessions[index] = action.payload;
       }
@@ -179,7 +181,9 @@ const supportSessionSlice = createSlice({
       })
       // Update session status cases
       .addCase(updateSessionStatus.fulfilled, (state, action) => {
-        const index = state.sessions.findIndex(session => session.id === action.payload.id);
+        const index = state.sessions.findIndex(
+          (session) => session.id === action.payload.id
+        );
         if (index !== -1) {
           state.sessions[index] = action.payload;
         }
@@ -190,11 +194,11 @@ const supportSessionSlice = createSlice({
   },
 });
 
-export const { 
-  clearError, 
-  setCurrentSession, 
-  clearCurrentSession, 
-  updateSessionInList 
+export const {
+  clearError,
+  setCurrentSession,
+  clearCurrentSession,
+  updateSessionInList,
 } = supportSessionSlice.actions;
 
 export default supportSessionSlice.reducer;

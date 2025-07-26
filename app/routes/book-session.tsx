@@ -2,17 +2,9 @@ import type { Route } from "./+types/book-session";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
-import { useAppSelector } from "~/store/hooks";
-import { selectAuth } from "~/store/selectors";
-
-interface BookingFormData {
-  name: string;
-  email: string;
-  reason: string;
-  category: string;
-  subject: string;
-  type: "technical" | "billing" | "general" | "complaint" | "feature_request";
-}
+import { useAppDispatch, useAppSelector } from "~/store/hooks";
+import { selectAuth, selectSupportSessions } from "~/store/selectors";
+import { clearError, createSession } from "~/store/slices/supportSessionSlice";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -28,6 +20,8 @@ export default function BookSession() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { error } = useAppSelector(selectSupportSessions);
 
   const { isAuthenticated, user } = useAppSelector(selectAuth);
 
@@ -40,7 +34,7 @@ export default function BookSession() {
     defaultValues: {
       name: "",
       email: "",
-      reason: "",
+      description: "",
       category: "",
       subject: "",
       type: "general",
@@ -84,18 +78,12 @@ export default function BookSession() {
     try {
       const bookingData = {
         ...data,
-        selectedDate,
-        selectedTime,
-        userId: isAuthenticated && user ? user.id : null,
+        date: selectedDate,
+        time: selectedTime,
       };
 
-      // TODO: Replace with actual API call
-      console.log("Booking submitted:", bookingData);
+      await dispatch(createSession(bookingData)).unwrap();
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Redirect to confirmation page
       navigate("/booking-confirmation", {
         state: {
           booking: bookingData,
@@ -108,7 +96,6 @@ export default function BookSession() {
       });
     } catch (error) {
       console.error("Booking failed:", error);
-      alert("Failed to book session. Please try again.");
     }
   };
 
@@ -261,17 +248,15 @@ export default function BookSession() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
+                        Support Type *
                       </label>
                       <select
                         {...register("category", {
-                          required: "Please select a support category",
+                          required: "Please select a support type",
                         })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       >
-                        <option selected value="general">
-                          General Support
-                        </option>
+                        <option value="general">General Support</option>
                         <option value="technical">Technical Issue</option>
                         <option value="billing">Billing Question</option>
                         <option value="complaint">Complaint</option>
@@ -312,7 +297,7 @@ export default function BookSession() {
                         Detailed Description *
                       </label>
                       <textarea
-                        {...register("reason", {
+                        {...register("description", {
                           required:
                             "Please describe the reason for your session",
                           minLength: {
@@ -325,9 +310,9 @@ export default function BookSession() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         placeholder="Describe the issue you're facing or what you need help with in detail..."
                       />
-                      {errors.reason && (
+                      {errors.description && (
                         <p className="mt-1 text-sm text-red-600">
-                          {errors.reason.message}
+                          {errors.description.message}
                         </p>
                       )}
                     </div>

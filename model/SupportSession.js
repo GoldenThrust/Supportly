@@ -1,30 +1,20 @@
 import { Schema, model } from 'mongoose';
-
+import { v4 as uuidv4 } from 'uuid';
 const supportSessionSchema = new Schema({
     sessionId: {
         type: String,
         required: true,
         unique: true,
-        default: () => `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+        default: () => uuidv4()
     },
     customerId: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    agentId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
     teamId: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true
-    },
-    type: {
-        type: String,
-        enum: ['chat', 'video', 'voice', 'screen_share'],
         required: true
     },
     status: {
@@ -52,10 +42,6 @@ const supportSessionSchema = new Schema({
         required: true,
         trim: true
     },
-    tags: [{
-        type: String,
-        trim: true
-    }],
     messages: [{
         senderId: {
             type: Schema.Types.ObjectId,

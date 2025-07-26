@@ -23,7 +23,7 @@ const teamSchema = new Schema({
     },
     maxConcurrentSessions: {
         type: Number,
-        default: 10,
+        default: 10,    
         min: 1
     },
     workingHours: {

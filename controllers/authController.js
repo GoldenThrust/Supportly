@@ -193,7 +193,6 @@ class AuthController {
             });
 
             await redis.del(`activations-token:${authToken}`);
-            const { name, email, role, avatar, phone, preferences } = user.toJSON();
 
             return res.redirect(`${clientUrl}`);
         } catch (error) {

@@ -285,16 +285,26 @@ supportSessionSchema.methods.rate = function (customerId, score, feedback = '') 
 };
 
 // Pre-save middleware to update timeline on status change
-supportSessionSchema.pre('save', function (next) {
-    if (this.isModified('status') && !this.isNew) {
-        this.timeline.push({
-            action: this.status,
-            performedBy: this.agentId || this.customerId,
-            details: `Status changed to ${this.status}`
-        });
-    }
-    next();
-});
+supportSessionSchema.methods.recordTimeline = async function (agent) {
+    const statusToActionMap = {
+        'pending': 'created',
+        'active': 'assigned',
+        'waiting': 'message_sent',
+        'resolved': 'resolved',
+        'closed': 'closed',
+        'escalated': 'escalated'
+    };
+
+    const action = statusToActionMap[this.status] || 'message_sent';
+
+    this.timeline.push({
+        action: action,
+        performedBy: agent,
+        details: `Status changed to ${this.status}`
+    });
+
+    return await this.save();
+};
 
 const SupportSession = model('SupportSession', supportSessionSchema);
 

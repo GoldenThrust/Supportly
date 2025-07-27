@@ -2,7 +2,9 @@ import mailService from "../config/mailservice.js";
 import SupportSession from "../model/SupportSession.js";
 import Team from "../model/Team.js";
 import User from "../model/User.js";
+import { clientUrl } from "../utils/constants.js";
 import { SessionQueue } from "../worker.js";
+
 
 class SupportSessionController {
     constructor() {
@@ -116,7 +118,7 @@ class SupportSessionController {
     async updateSession(req, res) {
         try {
             const { sessionId } = req.params;
-            const { emails, status, priority, notes, agentId } = req.body;
+            const { status, priority, notes, email } = req.body;
 
             // Find the session
             const session = await SupportSession.findOne({ sessionId }).populate('customerId teamId');
@@ -125,19 +127,20 @@ class SupportSessionController {
             }
 
             // If assigning an agent, validate the agent exists and is available
-            if (agentId) {
-                const agent = await User.findById(agentId);
+            if (email) {
+                const agent = await User.findOne({ email });
 
                 if (!agent) {
                     return res.status(404).json({ message: 'Agent not found' });
                 }
 
+
                 // Check if agent is part of a team or has appropriate role
-                if (agent.role !== 'agent' && agent.role !== 'admin') {
+                if (agent.role !== 'support_agent' && agent.role !== 'admin') {
                     return res.status(403).json({ message: 'User is not authorized to be assigned as agent' });
                 }
 
-                session.agentId = agent._id;
+                session.agentId = agent;
 
                 // Auto-activate session when agent is assigned
                 if (session.status === 'pending') {
@@ -161,30 +164,42 @@ class SupportSessionController {
             // Update the updatedAt timestamp
             session.updatedAt = new Date();
 
-            await session.save();
+            await session.recordTimeline(req.user);
 
             // Populate the updated session for response
             const updatedSession = await SupportSession.findOne({ sessionId }).populate('customerId agentId teamId');
 
+
             // Schedule email notification 15 minutes before session if agent is assigned and session is active
-            if (agentId && session.status === 'active' && session.date) {
+            if (email && session.status === 'active' && session.date) {
                 await this.scheduleEmailNotification(updatedSession);
 
-                // Send immediate agent assignment notification
+                // Send immediate agent assignment notification using Bull queue
                 try {
-                    await mailService.sendAgentAssignment({
+                    await SessionQueue.add('agent-assignment-notification', {
                         customerName: updatedSession.customerId.name,
                         customerEmail: updatedSession.customerId.email,
                         agentName: updatedSession.agentId.name,
+                        agentEmail: updatedSession.agentId.email,
                         sessionId: updatedSession.sessionId,
                         subject: updatedSession.subject,
                         category: updatedSession.category,
                         description: updatedSession.description,
                         sessionDate: updatedSession.date,
-                        meetingLink: updatedSession.meetingLink || `${process.env.FRONTEND_URL}/video-call/${updatedSession.sessionId}`
+                        meetingLink: updatedSession.meetingLink || `${clientUrl}/video-call/${updatedSession.sessionId}`
+                    }, {
+                        attempts: 3,
+                        backoff: {
+                            type: 'exponential',
+                            delay: 2000
+                        },
+                        removeOnComplete: 10,
+                        removeOnFail: 5
                     });
+
+                    console.log(`Queued agent assignment notifications for session ${updatedSession.sessionId}`);
                 } catch (emailError) {
-                    console.error('Error sending agent assignment email:', emailError);
+                    console.error('Error queuing agent assignment notifications:', emailError);
                 }
             }
 
@@ -235,21 +250,32 @@ class SupportSessionController {
             // Schedule email notification
             await this.scheduleEmailNotification(updatedSession);
 
-            // Send immediate agent assignment notification
+            // Send immediate agent assignment notification using Bull queue
             try {
-                await mailService.sendAgentAssignment({
+                await SessionQueue.add('agent-assignment-notification', {
                     customerName: updatedSession.customerId.name,
                     customerEmail: updatedSession.customerId.email,
                     agentName: updatedSession.agentId.name,
+                    agentEmail: updatedSession.agentId.email,
                     sessionId: updatedSession.sessionId,
                     subject: updatedSession.subject,
                     category: updatedSession.category,
                     description: updatedSession.description,
                     sessionDate: updatedSession.date,
-                    meetingLink: updatedSession.meetingLink || `${process.env.FRONTEND_URL}/video-call/${updatedSession.sessionId}`
+                    meetingLink: updatedSession.meetingLink || `${clientUrl}/video-call/${updatedSession.sessionId}`
+                }, {
+                    attempts: 3,
+                    backoff: {
+                        type: 'exponential',
+                        delay: 2000
+                    },
+                    removeOnComplete: 10,
+                    removeOnFail: 5
                 });
+
+                console.log(`Queued agent assignment notifications for session ${updatedSession.sessionId}`);
             } catch (emailError) {
-                console.error('Error sending agent assignment email:', emailError);
+                console.error('Error queuing agent assignment notifications:', emailError);
             }
 
             res.status(200).json({
@@ -274,7 +300,7 @@ class SupportSessionController {
             if (!session) {
                 return res.status(404).json({ message: 'Session not found' });
             }
-            
+
             session.status = status === 'pending' ? 'active' : status;
             session.updatedAt = new Date();
 
@@ -298,12 +324,12 @@ class SupportSessionController {
             const now = new Date();
 
             // Only schedule if notification time is in the future
-            if (sessionDate > now) {
+            if (notificationTime > now) {
                 const delay = notificationTime.getTime() - now.getTime();
 
-                // Add job to queue with delay
+                // Add job to queue with delay for 15-minute reminder
                 await SessionQueue.add('email-notification', {
-                    sessionId: session._id,
+                    sessionId: session.sessionId,
                     customerId: session.customerId._id,
                     customerName: session.customerId.name,
                     customerEmail: session.customerId.email,
@@ -314,17 +340,23 @@ class SupportSessionController {
                     subject: session.subject,
                     description: session.description,
                     category: session.category,
-                    meetingLink: session.meetingLink || `${process.env.FRONTEND_URL}/video-call/${session.sessionId}`
+                    meetingLink: session.meetingLink || `${clientUrl}/video-call/${session.sessionId}`
                 }, {
-                    // delay: delay,
-                    delay: 10,
+                    delay: delay,
                     attempts: 3,
                     backoff: {
                         type: 'exponential',
                         delay: 2000
-                    }
+                    },
+                    removeOnComplete: 10,
+                    removeOnFail: 5
                 });
+
+                console.log(`Scheduled 15-minute reminder for session ${session.sessionId} at ${notificationTime}`);
+            } else {
+                console.log(`Session ${session.sessionId} is too close or in the past to schedule reminder`);
             }
+
         } catch (error) {
             console.error('Error scheduling email notification:', error);
         }

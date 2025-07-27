@@ -20,7 +20,7 @@ export class TemplateEngine {
     const templatePath = path.join(__dirname, `../templates/emails/${templateName}.html`);
     
     try {
-      const template = await fs.readFile(templaftePath, 'utf-8');
+      const template = await fs.readFile(templatePath, 'utf-8');
       // Cache the template
       await redis.set(`templateName:${templateName}`, template, 24 * 60 * 60); // Cache for 24 hours
       return this.interpolate(template, data);

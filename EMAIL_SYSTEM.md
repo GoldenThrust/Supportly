@@ -183,7 +183,7 @@ MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your-app-password
 
 # Application URLs
-FRONTEND_URL=http://localhost:3000
+CLIENT_URL=http://localhost:3000
 
 # Redis (for production)
 REDIS_URL=redis://localhost:6379

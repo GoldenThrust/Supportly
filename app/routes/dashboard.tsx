@@ -1165,7 +1165,7 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(handleUpdateSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(handleUpdateSubmit)} className="space-y-4 text-black">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Assign Agent

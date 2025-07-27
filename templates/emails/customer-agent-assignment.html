@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support Agent Assigned - ${appName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: #1f2937;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
+      background-color: #ffffff;
+      padding: 3rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      text-align: center;
+      border: 1px solid #e5e7eb;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border-radius: 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    .success-badge {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .customer-greeting {
+      font-size: 1.125rem;
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+
+    .agent-card {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 2px solid #0ea5e9;
+      border-radius: 16px;
+      padding: 2rem;
+      margin: 2rem 0;
+      text-align: center;
+    }
+
+    .agent-avatar {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem auto;
+      font-size: 2rem;
+      color: white;
+      font-weight: 700;
+    }
+
+    .agent-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0c4a6e;
+      margin-bottom: 0.5rem;
+    }
+
+    .agent-title {
+      color: #0369a1;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    .session-info {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    .session-info h3 {
+      color: #4f46e5;
+      margin: 0 0 1rem 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #6b7280;
+    }
+
+    .info-value {
+      color: #111827;
+      font-weight: 500;
+    }
+
+    .category-badge {
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .next-steps {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    .next-steps h4 {
+      color: #059669;
+      margin: 0 0 1rem 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .next-steps ul {
+      margin: 0;
+      padding-left: 1.5rem;
+      color: #047857;
+    }
+
+    .next-steps li {
+      margin-bottom: 0.5rem;
+    }
+
+    .join-button {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 1rem 2rem;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1.125rem;
+      display: inline-block;
+      margin: 2rem 0 1rem 0;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .join-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .footer {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    .reminder-note {
+      background: #fef3c7;
+      border: 1px solid #fbbf24;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      color: #d97706;
+      font-weight: 500;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        margin: 1rem;
+        padding: 2rem 1rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+
+      .agent-avatar {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+      </svg>
+    </div>
+
+    <div class="success-badge">Agent Assigned</div>
+    
+    <h1>Great News!</h1>
+    <p class="customer-greeting">Hello ${customerName}, we've assigned a dedicated support agent to your session!</p>
+
+    <div class="agent-card">
+      <div class="agent-avatar">
+        ${agentName.0}
+      </div>
+      <div class="agent-name">${agentName}</div>
+      <div class="agent-title">Your Dedicated Support Agent</div>
+    </div>
+
+    <div class="session-info">
+      <h3>📋 Your Session Details</h3>
+      
+      <div class="info-row">
+        <span class="info-label">Session ID:</span>
+        <span class="info-value">#${sessionId}</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Subject:</span>
+        <span class="info-value">${subject}</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Category:</span>
+        <span class="category-badge">${category}</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Scheduled Date:</span>
+        <span class="info-value">${sessionDate}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Agent:</span>
+        <span class="info-value">${agentName}</span>
+      </div>
+    </div>
+
+    <div class="next-steps">
+      <h4>🎯 What happens next?</h4>
+      <ul>
+        <li>${agentName} will review your case and prepare for your session</li>
+        <li>You'll receive a reminder email 15 minutes before your scheduled time</li>
+        <li>Simply click the "Join Session" button when it's time to connect</li>
+        <li>Your agent will be ready to help resolve your ${category} issue</li>
+      </ul>
+    </div>
+
+    <div class="reminder-note">
+      <strong>⏰ Reminder:</strong> We'll send you an email reminder 15 minutes before your session starts. Make sure to test your camera and microphone beforehand!
+    </div>
+
+    <a href="${meetingLink}" class="join-button">
+      🎥 Join Session (Available at scheduled time)
+    </a>
+
+    <div class="footer">
+      <p><strong>Need to reschedule or have questions?</strong></p>
+      <p>Contact us with your Session ID #${sessionId} for quick assistance.</p>
+      <br>
+      <p>This is an automated notification from ${appName}.</p>
+    </div>
+  </div>
+</body>
+
+</html>

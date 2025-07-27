@@ -1,3 +1,5 @@
+import { clientUrl } from "./constants.js";
+
 // Utility function to format dates for email templates
 export const formatDateForEmail = (date) => {
     return new Date(date).toLocaleString('en-US', {
@@ -13,7 +15,7 @@ export const formatDateForEmail = (date) => {
 
 // Utility function to generate meeting links
 export const generateMeetingLink = (sessionId) => {
-    return `${process.env.FRONTEND_URL || 'http://localhost:3000'}/video-call/${sessionId}`;
+    return `${clientUrl || 'http://localhost:3000'}/video-call/${sessionId}`;
 };
 
 // Utility function to validate email addresses

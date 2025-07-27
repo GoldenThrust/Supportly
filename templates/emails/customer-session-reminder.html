@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Session Starts Soon - ${appName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: #1f2937;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
+      background-color: #ffffff;
+      padding: 3rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      text-align: center;
+      border: 1px solid #e5e7eb;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border-radius: 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    .reminder-badge {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .customer-greeting {
+      font-size: 1.125rem;
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+
+    .time-notice {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      color: #92400e;
+      font-weight: 600;
+      font-size: 1.125rem;
+    }
+
+    .agent-info {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #0ea5e9;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      text-align: center;
+    }
+
+    .agent-avatar {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem auto;
+      font-size: 1.5rem;
+      color: white;
+      font-weight: 700;
+    }
+
+    .agent-name {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #0c4a6e;
+      margin-bottom: 0.5rem;
+    }
+
+    .session-info {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    .session-info h3 {
+      color: #4f46e5;
+      margin: 0 0 1rem 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #6b7280;
+    }
+
+    .info-value {
+      color: #111827;
+      font-weight: 500;
+    }
+
+    .category-badge {
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .preparation-tips {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    .preparation-tips h4 {
+      color: #059669;
+      margin: 0 0 1rem 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .preparation-tips ul {
+      margin: 0;
+      padding-left: 1.5rem;
+      color: #047857;
+    }
+
+    .preparation-tips li {
+      margin-bottom: 0.5rem;
+    }
+
+    .join-button {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 1.25rem 2.5rem;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1.25rem;
+      display: inline-block;
+      margin: 2rem 0 1rem 0;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 15px -3px rgba(16, 185, 129, 0.4), 0 4px 6px -2px rgba(16, 185, 129, 0.2);
+    }
+
+    .join-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 20px -3px rgba(16, 185, 129, 0.4), 0 6px 8px -2px rgba(16, 185, 129, 0.2);
+    }
+
+    .support-info {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      color: #991b1b;
+      font-size: 0.875rem;
+    }
+
+    .footer {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        margin: 1rem;
+        padding: 2rem 1rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+
+      .join-button {
+        padding: 1rem 2rem;
+        font-size: 1.125rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+      </svg>
+    </div>
+
+    <div class="reminder-badge">⏰ Starting in 15 minutes</div>
+    
+    <h1>Your Session Starts Soon!</h1>
+    <p class="customer-greeting">Hello ${customerName}, your support session is about to begin.</p>
+
+    <div class="time-notice">
+      🚨 Your session starts in 15 minutes! Please join now to ensure you don't miss it.
+    </div>
+
+    <div class="agent-info">
+      <div class="agent-avatar">
+        ${agentName.0}
+      </div>
+      <div class="agent-name">${agentName}</div>
+      <div style="color: #0369a1; font-weight: 500;">Your Support Agent</div>
+    </div>
+
+    <div class="session-info">
+      <h3>📋 Session Details</h3>
+      
+      <div class="info-row">
+        <span class="info-label">Session ID:</span>
+        <span class="info-value">#${sessionId}</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Subject:</span>
+        <span class="info-value">${subject}</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Category:</span>
+        <span class="category-badge">${category}</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Scheduled Time:</span>
+        <span class="info-value">${sessionDate}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Agent:</span>
+        <span class="info-value">${agentName}</span>
+      </div>
+    </div>
+
+    <div class="preparation-tips">
+      <h4>🎯 Before You Join:</h4>
+      <ul>
+        <li><strong>Test your camera and microphone</strong> - Make sure they're working properly</li>
+        <li><strong>Find a quiet space</strong> - Minimize background noise and distractions</li>
+        <li><strong>Have your questions ready</strong> - Prepare any specific details about your ${category} issue</li>
+        <li><strong>Stable internet connection</strong> - Ensure you have a reliable connection</li>
+      </ul>
+    </div>
+
+    <a href="${meetingLink}" class="join-button">
+      🎥 Join Your Session Now
+    </a>
+
+    <div class="support-info">
+      <strong>⚠️ Technical Issues?</strong> If you experience any problems joining the session, please contact support immediately with Session ID #${sessionId}.
+    </div>
+
+    <div class="footer">
+      <p><strong>Session ID:</strong> #${sessionId} • <strong>Agent:</strong> ${agentName}</p>
+      <p>This reminder was sent 15 minutes before your scheduled session.</p>
+      <br>
+      <p>${appName} - We're here to help!</p>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -153,6 +153,76 @@ class MailService {
     });
   }
 
+  async sendCustomerSessionReminder(sessionData) {
+    const { 
+      customerName, 
+      customerEmail, 
+      agentName, 
+      sessionId,
+      sessionDate, 
+      subject, 
+      description, 
+      category, 
+      meetingLink 
+    } = sessionData;
+
+    const formattedDate = formatDateForEmail(sessionDate);
+
+    const html = await TemplateEngine.render('customer-session-reminder', {
+      appName: this.appName,
+      customerName,
+      agentName,
+      sessionId,
+      sessionDate: formattedDate,
+      subject,
+      description,
+      category,
+      meetingLink
+    });
+
+    return this.sendEmail({
+      to: customerEmail,
+      subject: `Your session starts in 15 minutes - ${subject}`,
+      text: `Reminder: Your support session "${subject}" with ${agentName} starts in 15 minutes. Join at: ${meetingLink}`,
+      html
+    });
+  }
+
+  async sendAgentSessionReminder(sessionData) {
+    const { 
+      customerName, 
+      agentName, 
+      agentEmail, 
+      sessionId,
+      sessionDate, 
+      subject, 
+      description, 
+      category, 
+      meetingLink 
+    } = sessionData;
+
+    const formattedDate = formatDateForEmail(sessionDate);
+
+    const html = await TemplateEngine.render('agent-session-reminder', {
+      appName: this.appName,
+      customerName,
+      agentName,
+      sessionId,
+      sessionDate: formattedDate,
+      subject,
+      description,
+      category,
+      meetingLink
+    });
+
+    return this.sendEmail({
+      to: agentEmail,
+      subject: `Session Starting Soon - ${subject}`,
+      text: `Agent reminder: Session "${subject}" with ${customerName} starts in 15 minutes. Join at: ${meetingLink}`,
+      html
+    });
+  }
+
   async sendAgentAssignment(sessionData) {
     const { 
       customerName, 
@@ -185,6 +255,76 @@ class MailService {
       to: customerEmail,
       subject: `Agent Assigned - ${subject}`,
       text: `Great news! ${agentName} has been assigned to your session on ${formattedDate}. Session ID: #${sessionId}`,
+      html
+    });
+  }
+
+  async sendAgentAssignmentNotification(sessionData) {
+    const { 
+      agentName, 
+      agentEmail, 
+      customerName, 
+      sessionId, 
+      subject, 
+      category, 
+      description, 
+      sessionDate,
+      meetingLink 
+    } = sessionData;
+
+    const formattedDate = formatDateForEmail(sessionDate);
+
+    const html = await TemplateEngine.render('agent-assignment-notification', {
+      appName: this.appName,
+      agentName,
+      customerName,
+      sessionId,
+      subject,
+      category,
+      description,
+      sessionDate: formattedDate,
+      meetingLink
+    });
+
+    return this.sendEmail({
+      to: agentEmail,
+      subject: `New Session Assignment - ${subject}`,
+      text: `You have been assigned to a new support session with ${customerName} on ${formattedDate}. Session ID: #${sessionId}`,
+      html
+    });
+  }
+
+  async sendCustomerAgentAssignmentUpdate(sessionData) {
+    const { 
+      customerName, 
+      customerEmail, 
+      agentName, 
+      sessionId, 
+      subject, 
+      category, 
+      description, 
+      sessionDate,
+      meetingLink 
+    } = sessionData;
+
+    const formattedDate = formatDateForEmail(sessionDate);
+
+    const html = await TemplateEngine.render('customer-agent-assignment', {
+      appName: this.appName,
+      customerName,
+      agentName,
+      sessionId,
+      subject,
+      category,
+      description,
+      sessionDate: formattedDate,
+      meetingLink
+    });
+
+    return this.sendEmail({
+      to: customerEmail,
+      subject: `Support Agent Assigned - ${subject}`,
+      text: `Good news! ${agentName} has been assigned as your support agent for the session on ${formattedDate}. Session ID: #${sessionId}`,
       html
     });
   }

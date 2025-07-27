@@ -26,7 +26,6 @@ export async function authenticate(req, res, next) {
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
-
     
     const decoded = verifyToken(token);
     if (!decoded) {

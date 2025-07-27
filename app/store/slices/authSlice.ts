@@ -2,18 +2,17 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import axios, { type AxiosResponse } from "axios";
 import toast from "react-hot-toast";
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  role?: string;
-  phone?: string;
-  preferences?: Record<string, any>;
-}
 
 interface AuthState {
-  user: User | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    role?: string;
+    phone?: string;
+    preferences?: Record<string, any>;
+  } | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;

@@ -11,10 +11,15 @@ import userRoutes from "./routes/user.js";
 import teamRoutes from "./routes/team.js";
 import { redis } from "./config/redis.js";
 import { apiUrl } from "./utils/constants.js";
+import { createAdapter } from "@socket.io/redis-streams-adapter";
+import { Server } from "socket.io";
+import websocket from "./config/websocket.js";
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const server = createServer(app);
+
 var whitelist = [...process.env.CORS_ORIGIN.split(','), `http://localhost:${PORT}`, apiUrl]
 var corsOptions = {
   origin: function (origin, callback) {
@@ -27,6 +32,7 @@ var corsOptions = {
   },
   credentials: true
 }
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -53,12 +59,22 @@ function gracefulShutdown() {
   }
 }
 
+
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
 server.listen(PORT, async () => {
   logger.info(`Server listening on http://localhost:${PORT}`);
+  const io = new Server(server, {
+    adapter: createAdapter(redis.client),
+    cors: {
+      origin: whitelist,
+      credentials: true
+    },
+  });
+
   await redis.connect();
   await database.connect();
+  await websocket.connect(io);
   logger.info('Server ready');
 });

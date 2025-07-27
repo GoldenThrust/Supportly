@@ -107,6 +107,10 @@ teamSchema.methods.isAvailable = function (currentTime = new Date()) {
     const startTimeMinutes = startHour * 60 + startMinute;
     const endTimeMinutes = endHour * 60 + endMinute;
 
+    // console.log(`currentTime is greater than startTime: ${currentTimeMinutes >= startTimeMinutes}`);
+    // console.log(`currentTime is less than endTime: ${currentTimeMinutes <= endTimeMinutes}`);
+    // console.log(`number of current session is not exceeded ${this.numberofCurrentSessions < this.maxConcurrentSessions}`)
+
     return currentTimeMinutes >= startTimeMinutes && currentTimeMinutes <= endTimeMinutes && this.numberofCurrentSessions < this.maxConcurrentSessions;
 };
 

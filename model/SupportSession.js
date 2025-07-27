@@ -51,6 +51,7 @@ const supportSessionSchema = new Schema({
         type: Date,
         required: true
     },
+    notes: String,
     messages: [{
         senderId: {
             type: Schema.Types.ObjectId,

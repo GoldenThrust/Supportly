@@ -7,6 +7,8 @@ import { createServer } from "http";
 import logger from "./config/logger.js";
 import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/supportSession.js";
+import userRoutes from "./routes/user.js";
+import teamRoutes from "./routes/team.js";
 import { redis } from "./config/redis.js";
 import { apiUrl } from "./utils/constants.js";
 
@@ -37,6 +39,8 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/teams', teamRoutes);
 
 function gracefulShutdown() {
   try {

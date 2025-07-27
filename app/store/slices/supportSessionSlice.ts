@@ -147,6 +147,58 @@ export const updateSessionStatus = createAsyncThunk(
   }
 );
 
+export const assignAgent = createAsyncThunk(
+  "supportSession/assignAgent",
+  async (
+    { sessionId, agentId }: { sessionId: string; agentId: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await axios.patch(
+        `/sessions/${sessionId}/assign`,
+        { agentId },
+        {
+          withCredentials: true,
+        }
+      );
+
+      return response.data.session;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to assign agent";
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const updateSession = createAsyncThunk(
+  "supportSession/updateSession",
+  async (
+    { sessionId, updates }: { sessionId: string; updates: any },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await axios.put(
+        `/sessions/${sessionId}`,
+        updates,
+        {
+          withCredentials: true,
+        }
+      );
+
+      return response.data.session;
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update session";
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const supportSessionSlice = createSlice({
   name: "supportSession",
   initialState,
@@ -213,6 +265,30 @@ const supportSessionSlice = createSlice({
       })
       // Update session status cases
       .addCase(updateSessionStatus.fulfilled, (state, action) => {
+        const index = state.sessions.findIndex(
+          (session) => session.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.sessions[index] = action.payload;
+        }
+        if (state.currentSession?.id === action.payload.id) {
+          state.currentSession = action.payload;
+        }
+      })
+      // Assign agent cases
+      .addCase(assignAgent.fulfilled, (state, action) => {
+        const index = state.sessions.findIndex(
+          (session) => session.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.sessions[index] = action.payload;
+        }
+        if (state.currentSession?.id === action.payload.id) {
+          state.currentSession = action.payload;
+        }
+      })
+      // Update session cases
+      .addCase(updateSession.fulfilled, (state, action) => {
         const index = state.sessions.findIndex(
           (session) => session.id === action.payload.id
         );

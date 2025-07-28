@@ -19,3 +19,13 @@ body {
 img {
   @apply max-w-full max-h-full object-cover;
 }
+
+::-webkit-scrollbar {
+  width: 2px;
+  @apply bg-gray-200 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-blue-700 dark:bg-blue-900;
+  border-radius: 100%;
+}

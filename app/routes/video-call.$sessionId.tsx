@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router";
 import { io, Socket } from "socket.io-client";
+import Peer from "simple-peer";
 import { useAppDispatch, useAppSelector } from "~/store/hooks";
 import { selectCurrentSession, selectUser } from "~/store/selectors";
 import { joinSession } from "~/store/slices/supportSessionSlice";
-import Peer from "simple-peer";
 
 export function meta() {
   return [
@@ -58,12 +58,24 @@ export default function VideoCall() {
   const [remoteUser, setRemoteUser] = useState<any>(null);
   const [showScreenShareNotification, setShowScreenShareNotification] =
     useState(false);
+  const [transcripts, setTranscripts] = useState<Array<{
+    id: number;
+    text: string;
+    timestamp: Date;
+    speaker: string;
+  }>>([]);
+  const [currentTranscript, setCurrentTranscript] = useState("");
+  const [showTranscripts, setShowTranscripts] = useState(true);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const peerRef = useRef<any>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const audioBufferQueueRef = useRef<Int16Array>(new Int16Array(0));
+  const transcriptScrollRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
   const sessionData = useAppSelector(selectCurrentSession);
   const [users, setUsers] = useState<{
@@ -100,6 +112,12 @@ export default function VideoCall() {
         event.preventDefault();
         if (isCallActive) {
           toggleScreenShare();
+        }
+      }
+      if (event.ctrlKey && event.shiftKey && event.key === "T") {
+        event.preventDefault();
+        if (isCallActive) {
+          setShowTranscripts(!showTranscripts);
         }
       }
     };
@@ -205,6 +223,28 @@ export default function VideoCall() {
         },
       ]);
     });
+
+    // Transcription events
+    socket.on("transcription", (transcript: string) => {
+      console.log("Received transcription:", transcript);
+      
+      // Update current live transcript
+      setCurrentTranscript(transcript);
+      
+      // Add to transcript history if it's a complete sentence
+      if (transcript.trim().endsWith('.') || transcript.trim().endsWith('?') || transcript.trim().endsWith('!')) {
+        setTranscripts((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            text: transcript,
+            timestamp: new Date(),
+            speaker: "Live Audio", // This could be enhanced to detect which user is speaking
+          },
+        ]);
+        setCurrentTranscript(""); // Clear current transcript after adding to history
+      }
+    });
   };
 
   const createPeer = (initiator: boolean, signal?: any, callerID?: string) => {
@@ -278,6 +318,9 @@ export default function VideoCall() {
       socketRef.current.emit("end-call");
       socketRef.current.disconnect();
     }
+
+    // Clean up audio processor
+    cleanupAudioProcessor();
   };
 
   useEffect(() => {
@@ -289,6 +332,102 @@ export default function VideoCall() {
     }
     return () => clearInterval(interval);
   }, [isCallActive]);
+
+  useEffect(() => {
+    if (localStreamRef.current) {
+      setupAudioProcessor();
+    }
+
+    return () => {
+      cleanupAudioProcessor();
+    };
+  }, [localStreamRef.current]);
+
+  // Auto-scroll transcript panel when new content is added
+  useEffect(() => {
+    if (transcriptScrollRef.current) {
+      transcriptScrollRef.current.scrollTop = transcriptScrollRef.current.scrollHeight;
+    }
+  }, [transcripts, currentTranscript]);
+
+  function mergeBuffers(lhs: Int16Array, rhs: Int16Array) {
+    const merged = new Int16Array(lhs.length + rhs.length);
+    merged.set(lhs, 0);
+    merged.set(rhs, lhs.length);
+    return merged;
+  }
+
+  const setupAudioProcessor = async () => {
+    try {
+      if (!localStreamRef.current) return;
+
+      // Create audio context
+      audioContextRef.current = new AudioContext({
+        sampleRate: 16000,
+        latencyHint: "balanced",
+      });
+
+      // Load audio processor worklet
+      await audioContextRef.current.audioWorklet.addModule(
+        "/audio-processor.js"
+      );
+
+      // Create audio worklet node
+      audioWorkletNodeRef.current = new AudioWorkletNode(
+        audioContextRef.current,
+        "audio-processor"
+      );
+
+      audioWorkletNodeRef.current.port.onmessage = (event) => {
+        if (audioContextRef.current) {
+          const currentBuffer = new Int16Array(event.data.audio_data);
+          audioBufferQueueRef.current = mergeBuffers(audioBufferQueueRef.current, currentBuffer);
+    
+          const bufferDuration =
+            (audioBufferQueueRef.current.length / audioContextRef.current.sampleRate) * 1000;
+    
+          if (bufferDuration >= 100) {
+            const totalSamples = Math.floor(audioContextRef.current.sampleRate * 0.1);
+            const finalBuffer = new Uint8Array(
+              audioBufferQueueRef.current.subarray(0, totalSamples).buffer
+            );
+            audioBufferQueueRef.current = audioBufferQueueRef.current.subarray(totalSamples);
+
+            socketRef.current?.emit("audio-chunk", finalBuffer);
+          }
+        }
+
+      };
+
+      // Create media stream source
+      const source = audioContextRef.current.createMediaStreamSource(
+        localStreamRef.current
+      );
+
+      // Connect source to audio worklet
+      source.connect(audioWorkletNodeRef.current);
+      audioWorkletNodeRef.current.connect(audioContextRef.current.destination);
+
+      // Start transcription
+      socketRef.current?.emit("start-transcription");
+
+      console.log("Audio processor setup completed");
+    } catch (error) {
+      console.error("Error setting up audio processor:", error);
+    }
+  };
+
+  const cleanupAudioProcessor = () => {
+    if (audioWorkletNodeRef.current) {
+      audioWorkletNodeRef.current.disconnect();
+      audioWorkletNodeRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -363,6 +502,9 @@ export default function VideoCall() {
       peerRef.current.destroy();
       peerRef.current = null;
     }
+
+    // Clean up audio processor
+    cleanupAudioProcessor();
 
     // Notify server
     if (socketRef.current) {
@@ -461,6 +603,12 @@ export default function VideoCall() {
 
         setIsScreenSharing(true);
 
+        // Restart audio processor with new stream (if it has audio)
+        if (stream.getAudioTracks().length > 0) {
+          cleanupAudioProcessor();
+          setupAudioProcessor();
+        }
+
         // Handle screen share ending
         stream.getVideoTracks()[0].addEventListener("ended", () => {
           setIsScreenSharing(false);
@@ -540,6 +688,10 @@ export default function VideoCall() {
         track.enabled = !isVideoOff;
       });
 
+      // Restart audio processor with new stream
+      cleanupAudioProcessor();
+      setupAudioProcessor();
+
       // Add chat message
       setChatMessages((prev) => [
         ...prev,
@@ -608,6 +760,11 @@ export default function VideoCall() {
 
       setNewMessage("");
     }
+  };
+
+  const clearTranscripts = () => {
+    setTranscripts([]);
+    setCurrentTranscript("");
   };
 
   return (
@@ -690,6 +847,106 @@ export default function VideoCall() {
 
         {/* Video Area */}
         <div className="flex-1 relative group">
+          {/* Transcript Panel */}
+          {showTranscripts && (
+            <div className="absolute top-4 left-4 w-80 max-h-52 bg-black bg-opacity-80 text-white rounded-lg shadow-lg z-20 overflow-hidden">
+              <div className="flex items-center justify-between p-3 border-b border-gray-600">
+                <h3 className="text-sm font-semibold flex items-center space-x-2">
+                  <svg
+                    className="w-4 h-4 text-green-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
+                  </svg>
+                  <span>Live Transcription</span>
+                </h3>
+                <div className="flex items-center space-x-2">
+                  {(transcripts.length > 0 || currentTranscript) && (
+                    <button
+                      onClick={clearTranscripts}
+                      className="text-gray-400 hover:text-white transition-colors"
+                      title="Clear transcripts"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowTranscripts(false)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                    title="Close transcription"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div ref={transcriptScrollRef} className="max-h-64 overflow-y-auto p-3 space-y-2">
+                {/* Current live transcript */}
+                {currentTranscript && (
+                  <div className="bg-blue-600 bg-opacity-50 rounded p-2 border-l-4 border-blue-400">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-blue-200">Live</span>
+                    </div>
+                    <p className="text-sm">{currentTranscript}</p>
+                  </div>
+                )}
+                
+                {/* Transcript history */}
+                {transcripts.slice(-10).map((transcript) => (
+                  <div key={transcript.id} className="bg-gray-700 bg-opacity-50 rounded p-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-300">{transcript.speaker}</span>
+                      <span className="text-xs text-gray-400">
+                        {transcript.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <p className="text-sm">{transcript.text}</p>
+                  </div>
+                ))}
+                
+                {transcripts.length === 0 && !currentTranscript && (
+                  <div className="text-center py-4">
+                    <p className="text-gray-400 text-sm">
+                      Waiting for speech to transcribe...
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Remote Video (Customer) */}
           <div className="w-full h-full bg-gray-800 relative">
             <video
@@ -822,7 +1079,34 @@ export default function VideoCall() {
 
           {/* Screen Share Quick Access Button */}
           {isCallActive && (
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 flex items-center space-x-2">
+              {/* Transcript Toggle Button */}
+              <button
+                onClick={() => setShowTranscripts(!showTranscripts)}
+                className={`px-3 py-2 rounded-full text-white text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
+                  showTranscripts
+                    ? "bg-green-600 hover:bg-green-700 ring-2 ring-green-300 ring-opacity-50"
+                    : "bg-gray-800 hover:bg-gray-700 border border-gray-600"
+                }`}
+                title={showTranscripts ? "Hide transcription" : "Show transcription"}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                  />
+                </svg>
+                <span>{showTranscripts ? "Hide" : "Show"} Transcript</span>
+              </button>
+
+              {/* Screen Share Button */}
               <button
                 onClick={toggleScreenShare}
                 className={`px-4 py-2 rounded-full text-white text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
@@ -1046,6 +1330,7 @@ export default function VideoCall() {
             <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
               <p className="font-medium">Keyboard Shortcuts:</p>
               <p>Ctrl+Shift+S: Toggle screen sharing</p>
+              <p>Ctrl+Shift+T: Toggle transcription</p>
             </div>
           </div>
 

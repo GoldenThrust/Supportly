@@ -1,11 +1,12 @@
 import socketCookieParser from "../middlewares/socketCookieParser.js";
 import socketAuthenticateToken from "../middlewares/socketTokenManager.js";
 import SupportSession from "../model/SupportSession.js";
-import { AssemblyAI } from 'assemblyai';
-
+import AssemblyAIConfigClass from "./assembyai.js";
+// import assembyai from "./assembyai.js";
 class WebSocketManager {
     constructor() {
         this.io = null;
+        this.userTranscribers = new Map(); // Store transcriber instances per socket
     }
 
     async connect(io) {
@@ -43,6 +44,10 @@ class WebSocketManager {
                     socket.id
                 );
 
+                // Create a new AssemblyAI instance for this user
+                const assemblyai = new AssemblyAIConfigClass();
+                this.userTranscribers.set(socket.id, assemblyai);
+
                 socket.on("rtc-signal", (signal, targetSessionId) => {
                     console.log(`WebRTC signal from ${socket.user.email} to session ${targetSessionId}`);
                     // Send signal to all other users in the session
@@ -70,51 +75,65 @@ class WebSocketManager {
                     socket.disconnect();
                 });
 
+                socket.on("start-transcription", async () => {
+                    console.log(`Starting transcription for ${socket.user.email}`);
+                    const assemblyai = this.userTranscribers.get(socket.id);
+                    if (assemblyai) {
+                        // Check if already running or connecting to prevent duplicate starts
+                        if (assemblyai.isConnected || assemblyai.isConnecting) {
+                            console.log('Transcription already running or starting...');
+                            return;
+                        }
+
+                        try {
+                            await assemblyai.run();
+                            assemblyai.transcribe((transcript) => {
+                                console.log(`Transcription for ${socket.user.email}:`, transcript);
+                                // Emit transcription to all users in the session
+                                socket.to(sessionId).emit("transcription", transcript);
+                            });
+                            console.log('Transcription started successfully');
+                        } catch (error) {
+                            console.error('Error starting transcription:', error);
+                        }
+                    }
+                });
+
+                socket.on('audio-chunk', async (audioBlob) => {
+                    const assemblyai = this.userTranscribers.get(socket.id);
+                    if (assemblyai) {
+                        // console.log(Buffer.from(audioBlob));
+                        try {
+                            assemblyai.transcriber.sendAudio(Buffer.from(audioBlob));
+                            if (audioBlob instanceof Blob) {
+                                const buffer = await audioBlob.arrayBuffer();
+                                console.log(`Received audio chunk from ${buffer}`);
+                                // assemblyai.transcriber.sendAudio(Buffer.from(buffer));
+                            }
+                        } catch (error) {
+                            console.error('Error processing audio chunk:', error);
+                        }
+                    }
+                });
+
+
                 // Notify other users that this user joined
                 socket.to(sessionId).emit("user-joined", user);
 
                 socket.on("disconnect", async () => {
                     console.log("Disconnected from WebSocket", socket.user.email);
+                    // Clean up transcription when user disconnects
+                    const assemblyai = this.userTranscribers.get(socket.id);
+                    if (assemblyai) {
+                        await assemblyai.safeClose();
+                        this.userTranscribers.delete(socket.id);
+                    }
                 });
             } catch (error) {
                 console.error("WebSocket connection error:", error);
                 socket.disconnect();
             }
         });
-    }
-
-    transcript() {
-        const client = new AssemblyAI({
-            apiKey: process.env.ASSEMBLY_AI_KEY,
-        });
-        const transcriber = client.streaming.transcriber({
-            sampleRate: 16_000,
-            formatTurns: true
-        });
-        transcriber.on("open", ({ id }) => {
-            console.log(`Session opened with ID: ${id}`);
-        });
-        transcriber.on("error", (error) => {
-            console.error("Error:", error);
-        });
-        transcriber.on("close", (code, reason) =>
-            console.log("Session closed:", code, reason),
-        );
-        transcriber.on("turn", (turn) => {
-            if (!turn.transcript) {
-                return;
-            }
-            console.log("Turn:", turn.transcript);
-        });
-        try {
-            await transcriber.connect();
-            console.log("Starting recording");
-            Readable.toWeb(recording.stream()).pipeTo(transcriber.stream());
-            // Stop recording and close connection using Ctrl-C.
-            await transcriber.close();
-        } catch (error) {
-            console.error(error);
-        }
     }
 }
 

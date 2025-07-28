@@ -14,6 +14,13 @@ import { apiUrl } from "./utils/constants.js";
 import { createAdapter } from "@socket.io/redis-streams-adapter";
 import { Server } from "socket.io";
 import websocket from "./config/websocket.js";
+import { authenticate, verifyToken } from "./middlewares/tokenManager.js";
+import { COOKIE_NAME } from "./utils/constants.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 const app = express();
@@ -39,14 +46,70 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(cors(corsOptions));
 
-app.get('/', (req, res) => {
-  res.send('Welcome to Supportly API');
-});
+// Serve static files from build/client
+app.use(express.static(path.join(__dirname, 'build/client')));
 
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/teams', teamRoutes);
+
+
+// Function to check if route needs authentication
+function isProtectedRoute(path) {
+  const protectedPaths = [
+    '/dashboard',
+    '/profile', 
+    '/book-session',
+    '/booking-confirmation',
+    '/video-call',
+    '/logout'
+  ];
+  
+  return protectedPaths.some(protectedPath => {
+    return path === protectedPath || path.startsWith(protectedPath + '/');
+  });
+}
+
+// Function to check if route is public auth route
+function isAuthRoute(path) {
+  const authPaths = ['/auth/login', '/auth/signup', '/auth/forgot-password'];
+  return authPaths.includes(path) || path.startsWith('/auth/');
+}
+
+// Handle home route with auth redirect
+app.get('/', (req, res) => {
+  const token = req.signedCookies[COOKIE_NAME];
+  if (token && verifyToken(token)) {
+    return res.redirect('/dashboard');
+  }
+  res.sendFile(path.join(__dirname, 'build/client/index.html'));
+});
+
+// Catch-all handler for React Router
+app.get(/(.*)/, (req, res) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ message: 'API route not found' });
+  }
+
+  const token = req.signedCookies[COOKIE_NAME];
+  const isAuthenticated = token && verifyToken(token);
+  
+  // If trying to access protected route without auth, redirect to login
+  if (isProtectedRoute(req.path) && !isAuthenticated) {
+    return res.redirect('/auth/login');
+  }
+  
+  // If trying to access auth routes while authenticated, redirect to dashboard
+  if (isAuthRoute(req.path) && isAuthenticated) {
+    return res.redirect('/dashboard');
+  }
+  
+  // Serve the React app
+  res.sendFile(path.join(__dirname, 'build/client/index.html'));
+});
 
 function gracefulShutdown() {
   try {

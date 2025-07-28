@@ -14,12 +14,12 @@ export default function IsAuthenticated() {
     // Only redirect if we're sure the user is not authenticated and not loading
     if (!isLoading && !isAuthenticated && !user) {
       // Show toast only once per navigation
-      if (!hasShownToast.current) {
-        toast.error("You must be logged in to access this page", {
-          duration: 3000,
-        });
-        hasShownToast.current = true;
-      }
+      // if (!hasShownToast.current) {
+      //   toast.error("You must be logged in to access this page", {
+      //     duration: 3000,
+      //   });
+      //   hasShownToast.current = true;
+      // }
       
       // Save the current location to redirect back after login
       // navigate("/login", { 

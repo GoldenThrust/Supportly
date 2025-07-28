@@ -6,7 +6,7 @@ import AssemblyAIConfigClass from "./assembyai.js";
 class WebSocketManager {
     constructor() {
         this.io = null;
-        this.userTranscribers = new Map(); // Store transcriber instances per socket
+        this.userTranscribers = new Map();
     }
 
     async connect(io) {

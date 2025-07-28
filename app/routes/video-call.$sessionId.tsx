@@ -849,7 +849,7 @@ export default function VideoCall() {
         <div className="flex-1 relative group">
           {/* Transcript Panel */}
           {showTranscripts && (
-            <div className="absolute top-4 left-4 w-80 max-h-52 bg-black bg-opacity-80 text-white rounded-lg shadow-lg z-20 overflow-hidden">
+            <div className="absolute top-4 left-4 w-80 max-h-56 bg-black bg-opacity-80 text-white rounded-lg shadow-lg z-20 overflow-hidden">
               <div className="flex items-center justify-between p-3 border-b border-gray-600">
                 <h3 className="text-sm font-semibold flex items-center space-x-2">
                   <svg

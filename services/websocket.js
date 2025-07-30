@@ -1,7 +1,7 @@
 import socketCookieParser from "../middlewares/socketCookieParser.js";
 import socketAuthenticateToken from "../middlewares/socketTokenManager.js";
 import SupportSession from "../model/SupportSession.js";
-import AssemblyAIConfigClass from "./assembyai.js";
+import AssemblyAIConfigClass from "../services/assembyai.js";
 // import assembyai from "./assembyai.js";
 class WebSocketManager {
     constructor() {
@@ -61,17 +61,24 @@ class WebSocketManager {
 
                 socket.on("chat-message", (message) => {
                     console.log(`Chat message from ${socket.user.email}:`, message);
-                    // Broadcast to all users in the session
-                    socket.to(sessionId).emit("chat-message", {
-                        ...message,
-                        sender: socket.user.email,
-                        timestamp: new Date().toISOString()
-                    });
-                });
 
+                    const messageConfig = {
+                        ...message,
+                        sender: socket.user.name,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    socket.session.addMessage(messageConfig.sender, messageConfig.text);
+                    socket.to(sessionId).emit("chat-message", messageConfig);
+                });
+        
                 socket.on("end-call", () => {
                     console.log(socket.id, `${socket.user.email} ended call`);
-                    socket.to(sessionId).emit("user-left", user);
+
+                    if (["support_agent", 'admin'].includes(socket.user.role)) {
+                        socket.session.resolve(socket.user._id, "Call ended by agent");
+                    }
+                    socket.to(sessionId).emit("user-left", user);  
                     socket.disconnect();
                 });
 
@@ -89,6 +96,8 @@ class WebSocketManager {
                             await assemblyai.run();
                             assemblyai.transcribe((transcript) => {
                                 console.log(`Transcription for ${socket.user.email}:`, transcript);
+
+                                socket.session.addTranscript(socket.user, transcript);
                                 // Emit transcription to all users in the session
                                 socket.to(sessionId).emit("transcription", transcript);
                             });

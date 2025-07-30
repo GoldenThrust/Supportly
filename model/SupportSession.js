@@ -82,6 +82,21 @@ const supportSessionSchema = new Schema({
             fileSize: Number
         }]
     }],
+    transcripts: [{
+        speaker: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        transcript: {
+            type: String,
+            required: true
+        },
+        timestamp: {
+            type: Date,
+            default: Date.now
+        },
+    }],
     timeline: [{
         action: {
             type: String,
@@ -103,7 +118,6 @@ const supportSessionSchema = new Schema({
         }
     }],
     videoCall: {
-        roomId: String,
         startedAt: Date,
         endedAt: Date,
         duration: Number, // in seconds
@@ -216,6 +230,16 @@ supportSessionSchema.methods.addMessage = function (senderId, message, messageTy
         action: 'message_sent',
         performedBy: senderId,
         details: `${messageType} message sent`
+    });
+
+    return this.save();
+};
+
+supportSessionSchema.methods.addTranscript = function (speaker, transcript) {
+    this.transcripts.push({
+        speaker,
+        transcript,
+        timestamp: new Date()
     });
 
     return this.save();

@@ -1,6 +1,6 @@
 import Queue from 'bull';
-import mailService from './config/mailservice.js';
-import logger from './config/logger.js';
+import mailService from './services/mailservice.js';
+import logger from './services/logger.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 

@@ -1,4 +1,4 @@
-import mailService from "../config/mailservice.js";
+import mailService from "../services/mailservice.js";
 import { redis } from "../config/redis.js";
 import { v4 as uuid } from 'uuid';
 import User from "../model/User.js";

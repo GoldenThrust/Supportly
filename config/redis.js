@@ -1,6 +1,5 @@
 import { createClient } from "redis";
-import logger from "./logger.js";
-
+import logger from "../services/logger.js";
 class RedisClient {
     constructor() {
         this.client = createClient(process.env.REDIS_URL || "redis://localhost:6379");

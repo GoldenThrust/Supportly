@@ -1,4 +1,4 @@
-import mailService from "../config/mailservice.js";
+import mailService from "../services/mailservice.js";
 import SupportSession from "../model/SupportSession.js";
 import Team from "../model/Team.js";
 import User from "../model/User.js";

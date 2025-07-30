@@ -4,7 +4,6 @@ import cookieParser from "cookie-parser";
 import { database } from "./config/db.js";
 import express from 'express';
 import { createServer } from "http";
-import logger from "./config/logger.js";
 import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/supportSession.js";
 import userRoutes from "./routes/user.js";
@@ -13,11 +12,14 @@ import { redis } from "./config/redis.js";
 import { apiUrl } from "./utils/constants.js";
 import { createAdapter } from "@socket.io/redis-streams-adapter";
 import { Server } from "socket.io";
-import websocket from "./config/websocket.js";
+import websocket from "./services/websocket.js";
 import { authenticate, verifyToken } from "./middlewares/tokenManager.js";
 import { COOKIE_NAME } from "./utils/constants.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
+import logger from "./services/logger.js";
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import logger from './logger.js';
+import logger from '../services/logger.js';
 
 class Database {
     constructor({ name = "supportly", user = "", password = "", host = "localhost", port = 27017, url = '', appname = "" } = {}) {

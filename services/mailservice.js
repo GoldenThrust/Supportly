@@ -328,6 +328,70 @@ class MailService {
       html
     });
   }
+
+  async sendCustomerSessionSummary(sessionId, subject, description, category, summary, agentName, user, session) {
+    const formattedDate = formatDateForEmail(session.date);
+    const ratingLink = `${this.apiUrl}/rating/${sessionId}`;
+    const supportUrl = `${this.apiUrl}/support`;
+    const unsubscribeUrl = `${this.apiUrl}/unsubscribe`;
+
+    const html = await TemplateEngine.render('customer-session-summary', {
+      appName: this.appName,
+      customerName: user.name,
+      agentName,
+      sessionId,
+      subject,
+      category,
+      description,
+      sessionDate: formattedDate,
+      summary,
+      ratingLink,
+      supportUrl,
+      unsubscribeUrl
+    });
+
+    return this.sendEmail({
+      to: user.email,
+      subject: `Session Summary - ${subject}`,
+      text: `Your support session "${subject}" has been completed. Session ID: #${sessionId}`,
+      html
+    });
+  }
+
+  async sendAgentSessionSummary(sessionId, subject, description, category, summary, agentName, user, session) {
+    const formattedDate = formatDateForEmail(session.date);
+    const dashboardUrl = `${this.apiUrl}/dashboard`;
+    const sessionDetailUrl = `${this.apiUrl}/session/${sessionId}`;
+    const supportUrl = `${this.apiUrl}/help`;
+    const preferencesUrl = `${this.apiUrl}/preferences`;
+
+    // Get agent email from session.agentId if populated, otherwise use a default
+    const agentEmail = session.agentId?.email || `${agentName.toLowerCase().replace(' ', '.')}@supportly.com`;
+
+    const html = await TemplateEngine.render('agent-session-summary', {
+      appName: this.appName,
+      customerName: user.name,
+      customerEmail: user.email,
+      agentName,
+      sessionId,
+      subject,
+      category,
+      description,
+      sessionDate: formattedDate,
+      summary,
+      dashboardUrl,
+      sessionDetailUrl,
+      supportUrl,
+      preferencesUrl
+    });
+
+    return this.sendEmail({
+      to: agentEmail,
+      subject: `Session Summary - ${subject} (#${sessionId})`,
+      text: `Session "${subject}" with ${user.name} has been completed. Session ID: #${sessionId}`,
+      html
+    });
+  }
 }
 
 const mailService = new MailService();

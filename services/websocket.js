@@ -1,9 +1,11 @@
 import socketCookieParser from "../middlewares/socketCookieParser.js";
 import socketAuthenticateToken from "../middlewares/socketTokenManager.js";
 import SupportSession from "../model/SupportSession.js";
+import User from "../model/User.js";
 import AssemblyAIConfigClass from "../services/assembyai.js";
 import aiservice from "./aiservice.js";
-// import assembyai from "./assembyai.js";
+import mailservice from "./mailservice.js";
+import { formatDateForEmail } from "../utils/functions.js";
 class WebSocketManager {
     constructor() {
         this.io = null;
@@ -72,16 +74,86 @@ class WebSocketManager {
                     socket.session.addMessage(messageConfig.sender, messageConfig.text);
                     socket.to(sessionId).emit("chat-message", messageConfig);
                 });
-        
+
                 socket.on("end-call", async () => {
                     console.log(socket.id, `${socket.user.email} ended call`);
 
                     if (["support_agent", 'admin'].includes(socket.user.role)) {
-                        const summary = await aiservice.generateSummary(socket.session);
-                        socket.session.end(socket.user._id, summary, "closed");
+                        try {
+                            // Generate AI summary
+                            const summary = await aiservice.generateSummary(socket.session);
+
+                            // End the session with summary
+                            await socket.session.end(socket.user._id, summary, "closed");
+
+                            // Reload session with populated data
+                            const populatedSession = await SupportSession.findById(socket.session._id)
+                                .populate([{ path: 'customerId', select: 'name email' },
+                                { path: 'agentId', select: 'name email' }]);
+
+                            if (populatedSession) {
+                                // Format category for display
+                                const formatCategory = (category) => {
+                                    const categoryMap = {
+                                        'technical': 'Technical Support',
+                                        'billing': 'Billing & Payments',
+                                        'general': 'General Inquiry',
+                                        'complaint': 'Complaint',
+                                        'feature_request': 'Feature Request'
+                                    };
+                                    return categoryMap[category] || category;
+                                };
+
+                                const formattedCategory = formatCategory(populatedSession.category);
+
+                                // Send summary email to customer
+                                if (populatedSession.customerId) {
+                                    try {
+                                        await mailservice.sendCustomerSessionSummary(
+                                            populatedSession.sessionId,
+                                            populatedSession.subject,
+                                            populatedSession.description,
+                                            formattedCategory,
+                                            summary,
+                                            populatedSession.agentId?.name || 'Support Agent',
+                                            populatedSession.customerId,
+                                            populatedSession
+                                        );
+                                        console.log(`✅ Customer summary sent to: ${populatedSession.customerId.email}`);
+                                    } catch (emailError) {
+                                        console.error('❌ Error sending customer summary email:', emailError);
+                                    }
+                                }
+
+                                // Send summary email to agent
+                                if (populatedSession.agentId) {
+                                    try {
+                                        await mailservice.sendAgentSessionSummary(
+                                            populatedSession.sessionId,
+                                            populatedSession.subject,
+                                            populatedSession.description,
+                                            formattedCategory,
+                                            summary,
+                                            populatedSession.agentId.name,
+                                            populatedSession.customerId,
+                                            populatedSession
+                                        );
+                                        console.log(`✅ Agent summary sent to: ${populatedSession.agentId.email}`);
+                                    } catch (emailError) {
+                                        console.error('❌ Error sending agent summary email:', emailError);
+                                    }
+                                }
+
+                                console.log(`📋 Session #${populatedSession.sessionId} completed successfully`);
+                            } else {
+                                console.error('❌ Could not find session after ending call');
+                            }
+                        } catch (error) {
+                            console.error('❌ Error processing session end:', error);
+                        }
                     }
 
-                    socket.to(sessionId).emit("user-left", user);  
+                    socket.to(sessionId).emit("user-left", user);
                     socket.disconnect();
                 });
 

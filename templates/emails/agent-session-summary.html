@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Session Summary - ${appName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: #1f2937;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 2rem auto;
+      background-color: #ffffff;
+      padding: 3rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      text-align: center;
+      border: 1px solid #e5e7eb;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+      border-radius: 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo {
+      color: white;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .agent-badge {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 1.125rem;
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+
+    .session-overview {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      text-align: left;
+      border: 1px solid #0891b2;
+    }
+
+    .overview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .session-id {
+      font-weight: 600;
+      color: #0891b2;
+      font-size: 1.1rem;
+    }
+
+    .session-status {
+      background: #10b981;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .detail-section {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      text-align: left;
+      border: 1px solid #e5e7eb;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .detail-item {
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      border-left: 3px solid #0891b2;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.25rem;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .detail-value {
+      color: #6b7280;
+    }
+
+    .summary-section {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      text-align: left;
+      border: 1px solid #e5e7eb;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .summary-content {
+      color: #4b5563;
+      line-height: 1.7;
+      background: #f0f9ff;
+      padding: 1.25rem;
+      border-radius: 8px;
+      border-left: 4px solid #0891b2;
+    }
+
+    .performance-section {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      text-align: center;
+      border: 1px solid #10b981;
+    }
+
+    .performance-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #047857;
+      margin-bottom: 1rem;
+    }
+
+    .performance-text {
+      color: #065f46;
+      margin-bottom: 1rem;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .action-button {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .primary-button {
+      background: #0891b2;
+      color: white;
+    }
+
+    .primary-button:hover {
+      background: #0e7490;
+    }
+
+    .secondary-button {
+      background: white;
+      color: #0891b2;
+      border: 2px solid #0891b2;
+    }
+
+    .secondary-button:hover {
+      background: #0891b2;
+      color: white;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    .footer a {
+      color: #0891b2;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        margin: 1rem;
+        padding: 2rem 1rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .overview-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <div class="logo">S</div>
+    </div>
+
+    <div class="agent-badge">Agent Report</div>
+
+    <h1>Session Summary</h1>
+    <p class="subtitle">Session report for #${sessionId}</p>
+
+    <div class="session-overview">
+      <div class="overview-header">
+        <div class="session-id">Session #${sessionId}</div>
+        <div class="session-status">Completed</div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="section-title">📋 Session Details</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">Customer</div>
+          <div class="detail-value">${customerName} (${customerEmail})</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Agent</div>
+          <div class="detail-value">${agentName}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Subject</div>
+          <div class="detail-value">${subject}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Category</div>
+          <div class="detail-value">${category}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Session Date</div>
+          <div class="detail-value">${sessionDate}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Description</div>
+          <div class="detail-value">${description}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-section">
+      <div class="section-title">
+        🤖 AI-Generated Summary
+      </div>
+      <div class="summary-content">
+        ${summary}
+      </div>
+    </div>
+
+    <div class="performance-section">
+      <div class="performance-title">🎯 Session Completed Successfully</div>
+      <p class="performance-text">
+        Great work! This session has been marked as resolved. The customer will receive a summary and rating request.
+      </p>
+    </div>
+
+    <div class="action-buttons">
+      <a href="${dashboardUrl}" class="action-button primary-button">View Dashboard</a>
+      <a href="${sessionDetailUrl}" class="action-button secondary-button">Session Details</a>
+    </div>
+
+    <div class="footer">
+      <p>
+        <a href="${dashboardUrl}">Agent Dashboard</a> |
+        <a href="${supportUrl}">Help Center</a> |
+        <a href="${preferencesUrl}">Notification Preferences</a>
+      </p>
+      <p style="margin-top: 1rem;">
+        © 2025 ${appName}. All rights reserved.
+      </p>
+    </div>
+  </div>
+</body>
+
+</html>

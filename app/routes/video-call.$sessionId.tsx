@@ -910,8 +910,8 @@ export default function VideoCall() {
                   </button>
                 </div>
               </div>
-              
-              <div ref={transcriptScrollRef} className="max-h-64 overflow-y-auto p-3 space-y-2">
+
+              <div ref={transcriptScrollRef} className={`max-h-64 overflow-y-auto p-3 space-y-2 ${transcripts.length > 3 ? "pb-22" : ""}`}>
                 {/* Current live transcript */}
                 {currentTranscript && (
                   <div className="bg-blue-600 bg-opacity-50 rounded p-2 border-l-4 border-blue-400">

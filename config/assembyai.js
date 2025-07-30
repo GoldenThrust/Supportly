@@ -1,9 +1,37 @@
-import { Readable } from 'stream'
 import { AssemblyAI } from 'assemblyai'
+import logger from './logger.js';
+const DISABLE_ASSEMBLYAI = false;
+
+
+const mockTranscription = [
+    "Hello, how can I help you today?",
+    "I am looking for support with my account.",
+    "Sure, I can assist you with that.",
+    "Can you please provide your account details?",
+    "My account number is 123456.",
+    "Thank you for providing your account number.",
+    "Is there anything else I can help you with?",
+    "Yes, I need help resetting my password.",
+    "Sure, I can help you with that.",
+    "Please follow the instructions I will send you.",
+    "I have sent the instructions to your email.",
+    "Thank you for your assistance.",
+    "You're welcome! Is there anything else?",
+    "No, that will be all. Thank you!",
+    "Alright, have a great day!",
+    "Goodbye!",
+];
 
 class AssemblyAIConfig {
     constructor() {
         try {
+            if (DISABLE_ASSEMBLYAI) {
+                logger.info('AssemblyAI is disabled');
+                return;
+            }
+
+            logger.info('Initializing AssemblyAIConfig...');
+
             this.client = new AssemblyAI({
                 apiKey: process.env.ASSEMBLYAI_API_KEY,
             });
@@ -13,7 +41,7 @@ class AssemblyAIConfig {
             // this.audioBuffer = [];
 
         } catch (error) {
-            console.error(error);
+            logger.error(error);
         }
     }
 
@@ -21,7 +49,12 @@ class AssemblyAIConfig {
         try {
             // Prevent multiple concurrent connection attempts
             if (this.isConnecting || this.isConnected) {
-                console.log('Connection already in progress or established...');
+                logger.info('Connection already in progress or established...');
+                return;
+            }
+
+            if (DISABLE_ASSEMBLYAI) {
+                logger.info('AssemblyAI is disabled, skipping connection');
                 return;
             }
 
@@ -41,7 +74,7 @@ class AssemblyAIConfig {
 
             // Set up event handlers before connecting
             this.transcriber.on("open", ({ id }) => {
-                console.log(`Session opened with ID: ${id}`);
+                logger.info(`Session opened with ID: ${id}`);
                 this.isConnected = true;
                 this.isConnecting = false;
                 // Process any buffered audio chunks
@@ -49,29 +82,67 @@ class AssemblyAIConfig {
             });
 
             this.transcriber.on("error", (error) => {
-                console.error("Transcriber error:", error);
+                logger.error("Transcriber error:", error);
                 this.isConnected = false;
                 this.isConnecting = false;
             });
 
             this.transcriber.on("close", (code, reason) => {
-                console.log("Session closed:", code, reason);
+                logger.info("Session closed:", code, reason);
                 this.isConnected = false;
                 this.isConnecting = false;
             });
 
-            console.log("Connecting to streaming transcript service");
+            logger.info("Connecting to streaming transcript service");
 
             await this.transcriber.connect();
-            console.log("Starting streaming...");
+            logger.info("Starting streaming...");
         } catch (error) {
-            console.error('Error in run():', error);
+            logger.error('Error in run():', error);
             this.isConnected = false;
             this.isConnecting = false;
         }
     }
 
+    async sendAudio(audioBuffer) {
+        if (DISABLE_ASSEMBLYAI) {
+            // logger.info('AssemblyAI is disabled, skipping audio send');
+            return;
+        }
+
+        if (!this.transcriber || this.transcriber.readyState !== 1) {
+            // logger.error('Transcriber is not connected or ready to send audio');
+            return;
+        }
+
+        try {
+            let buffer = audioBuffer;
+            if (audioBuffer instanceof Blob) {
+                buffer = await audioBuffer.arrayBuffer();
+            }
+            this.transcriber.sendAudio(Buffer.from(buffer));
+        } catch (error) {
+            logger.error('Error processing audio chunk:', error);
+        }
+    }
+
     transcribe(callBack) {
+        if (DISABLE_ASSEMBLYAI) {
+            // Simulate transcription for testing purposes
+            let index = 0;
+            const interval = setInterval(() => {
+                if (index < mockTranscription.length) {
+                    callBack(mockTranscription[index]);
+                    index++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 3000);
+            return;
+        }
+
+        logger.info('Starting transcription...');
+
         this.transcriber.on("turn", (turn) => {
             if (!turn.transcript) {
                 return;
@@ -79,90 +150,26 @@ class AssemblyAIConfig {
 
             callBack(turn.transcript);
         });
+
     }
-
-    // async stream(audioData) {
-    //     try {
-    //         // Check if transcriber is connected before streaming
-    //         if (!this.transcriber || !this.isConnected) {
-    //             // Buffer audio chunks until connection is ready
-    //             console.log('Buffering audio chunk - transcriber not ready', this.isConnected, this.isConnecting);
-    //             // console.log(this.transcriber);
-    //             this.audioBuffer.push(audioData);
-    //             return;
-    //         }
-
-    //         await this.streamAudioData(audioData);
-    //     } catch (error) {
-    //         console.error('Error streaming audio data:', error);
-    //     }
-    // }
-
-    // async streamAudioData(audioData) {
-    //     try {
-    //         // Double-check connection status before streaming
-    //         if (!this.transcriber || !this.isConnected) {
-    //             console.log('Transcriber not ready for streaming');
-    //             return;
-    //         }
-
-    //         // Additional check for WebSocket ready state
-    //         if (this.transcriber.readyState !== 1) {
-    //             console.log('WebSocket not in OPEN state:', this.transcriber.readyState);
-    //             this.isConnected = false;
-    //             return;
-    //         }
-
-    //         // Convert Buffer to Readable stream if needed
-    //         let readableStream;
-    //         if (Buffer.isBuffer(audioData)) {
-    //             readableStream = Readable.from([audioData]);
-    //         } else if (audioData instanceof Readable) {
-    //             readableStream = audioData;
-    //         } else {
-    //             throw new Error('Invalid audio data type. Expected Buffer or Readable stream.');
-    //         }
-            
-    //         const webStream = Readable.toWeb(readableStream);
-    //         await webStream.pipeTo(this.transcriber.stream());
-    //     } catch (error) {
-    //         console.error('Error in streamAudioData:', error);
-    //         // Reset connection state on streaming errors
-    //         this.isConnected = false;
-    //     }
-    // }
-
-    // async processBufferedAudio() {
-    //     if (this.audioBuffer.length > 0) {
-    //         console.log(`Processing ${this.audioBuffer.length} buffered audio chunks`);
-    //         for (const audioData of this.audioBuffer) {
-    //             try {
-    //                 await this.streamAudioData(audioData);
-    //             } catch (error) {
-    //                 console.error('Error processing buffered audio:', error);
-    //             }
-    //         }
-    //         this.audioBuffer = [];
-    //     }
-    // }
 
     async safeClose() {
         try {
             if (this.transcriber) {
                 // Don't try to close if it's still connecting
                 if (this.transcriber.readyState === 0) { // CONNECTING
-                    console.log('Transcriber still connecting, setting to null without closing');
+                    logger.info('Transcriber still connecting, setting to null without closing');
                     this.transcriber = null;
                     return;
                 }
-                
+
                 if (this.transcriber.readyState === 1) { // OPEN
                     await this.transcriber.close();
                 }
                 this.transcriber = null;
             }
         } catch (error) {
-            console.error('Error in safeClose:', error);
+            logger.error('Error in safeClose:', error);
             this.transcriber = null;
         }
     }
@@ -172,7 +179,7 @@ class AssemblyAIConfig {
             this.isConnected = false;
             this.isConnecting = false;
             // this.audioBuffer = [];
-            
+
             if (this.transcriber) {
                 // Check if the transcriber connection is in a valid state before closing
                 if (this.transcriber.readyState === 1) { // WebSocket OPEN state
@@ -188,7 +195,7 @@ class AssemblyAIConfig {
                 this.transcriber = null;
             }
         } catch (error) {
-            console.error('Error closing transcriber:', error);
+            logger.error('Error closing transcriber:', error);
             // Ensure cleanup even if close fails
             this.transcriber = null;
             this.isConnected = false;

@@ -102,17 +102,7 @@ class WebSocketManager {
                 socket.on('audio-chunk', async (audioBlob) => {
                     const assemblyai = this.userTranscribers.get(socket.id);
                     if (assemblyai) {
-                        // console.log(Buffer.from(audioBlob));
-                        try {
-                            assemblyai.transcriber.sendAudio(Buffer.from(audioBlob));
-                            if (audioBlob instanceof Blob) {
-                                const buffer = await audioBlob.arrayBuffer();
-                                console.log(`Received audio chunk from ${buffer}`);
-                                // assemblyai.transcriber.sendAudio(Buffer.from(buffer));
-                            }
-                        } catch (error) {
-                            console.error('Error processing audio chunk:', error);
-                        }
+                        assemblyai.sendAudio(audioBlob);
                     }
                 });
 

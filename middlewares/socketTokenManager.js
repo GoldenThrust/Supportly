@@ -27,7 +27,6 @@ export default async function socketAuthenticateToken(socket, next) {
   if (!supportSession) {
     return next(new Error("Support session not found"));
   }
-  console.log("Socket user authenticated:", socket.handshake.query);
 
   socket.user = decoded;
   socket._id = decoded._id;

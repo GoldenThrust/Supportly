@@ -1,5 +1,5 @@
 import mailService from "../services/mailservice.js";
-import { redis } from "../config/redis.js";
+import redis from "../config/redis.js";
 import { v4 as uuid } from 'uuid';
 import User from "../model/User.js";
 import { hash, verify } from 'argon2';

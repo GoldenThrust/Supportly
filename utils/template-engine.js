@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { apiUrl } from './constants.js';
-import { redis } from '../config/redis.js';
+import redis from '../config/redis.js';
 
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

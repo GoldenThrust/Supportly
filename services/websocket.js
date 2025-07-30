@@ -2,6 +2,7 @@ import socketCookieParser from "../middlewares/socketCookieParser.js";
 import socketAuthenticateToken from "../middlewares/socketTokenManager.js";
 import SupportSession from "../model/SupportSession.js";
 import AssemblyAIConfigClass from "../services/assembyai.js";
+import aiservice from "./aiservice.js";
 // import assembyai from "./assembyai.js";
 class WebSocketManager {
     constructor() {
@@ -72,12 +73,14 @@ class WebSocketManager {
                     socket.to(sessionId).emit("chat-message", messageConfig);
                 });
         
-                socket.on("end-call", () => {
+                socket.on("end-call", async () => {
                     console.log(socket.id, `${socket.user.email} ended call`);
 
                     if (["support_agent", 'admin'].includes(socket.user.role)) {
-                        socket.session.resolve(socket.user._id, "Call ended by agent");
+                        const summary = await aiservice.generateSummary(socket.session);
+                        socket.session.end(socket.user._id, summary, "closed");
                     }
+
                     socket.to(sessionId).emit("user-left", user);  
                     socket.disconnect();
                 });

@@ -1,6 +1,6 @@
 import { AssemblyAI } from 'assemblyai'
 import logger from '../services/logger.js';
-const DISABLE_ASSEMBLYAI = false;
+const DISABLE_ASSEMBLYAI = true;
 
 
 const mockTranscription = [

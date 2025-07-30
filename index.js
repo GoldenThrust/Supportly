@@ -1,14 +1,14 @@
 import "dotenv/config";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
-import { database } from "./config/db.js";
 import express from 'express';
 import { createServer } from "http";
 import authRoutes from "./routes/auth.js";
 import sessionRoutes from "./routes/supportSession.js";
 import userRoutes from "./routes/user.js";
 import teamRoutes from "./routes/team.js";
-import { redis } from "./config/redis.js";
+import database from "./config/db.js";
+import redis from "./config/redis.js";
 import { apiUrl } from "./utils/constants.js";
 import { createAdapter } from "@socket.io/redis-streams-adapter";
 import { Server } from "socket.io";

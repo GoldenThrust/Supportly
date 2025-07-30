@@ -67,4 +67,4 @@ export const database = new Database({
     url: process.env.DB_URL || '',
 });
 
-export default Database;
+export default database;

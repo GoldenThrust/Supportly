@@ -277,6 +277,22 @@ supportSessionSchema.methods.resolve = function (agentId, summary = '') {
     return this.save();
 };
 
+supportSessionSchema.methods.end = function (agentId, summary = '', status= 'closed') {
+    this.status = status || 'closed';
+    this.resolution.summary = summary;
+    this.resolution.resolvedAt = new Date();
+    this.resolution.resolutionTime = Math.floor((this.resolution.resolvedAt - this.createdAt) / (1000 * 60));
+
+    // Add timeline entry
+    this.timeline.push({
+        action: 'resolved',
+        performedBy: agentId,
+        details: 'Session resolved'
+    });
+
+    return this.save();
+};
+
 // Method to escalate session
 supportSessionSchema.methods.escalate = function (escalatedBy, escalatedTo, reason) {
     this.status = 'escalated';
